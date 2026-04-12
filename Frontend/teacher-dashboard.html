@@ -192,21 +192,8 @@
     </main>
   </div>
 
-  <!-- Chatbot -->
-  <!-- bottom-28 (112px) sits ABOVE the chat window bottom (96px) — zero overlap possible -->
-  <button id="chatbotToggle" class="fixed bottom-28 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition z-20 flex items-center justify-center text-2xl">💬</button>
-  <!-- z-[9999]: highest on page. overflow:visible so child z-indexes are NOT collapsed -->
-  <div id="chatbotWindow" class="fixed bottom-24 right-6 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] hidden flex-col" style="height:420px; overflow:visible;">
-    <div class="bg-blue-600 p-4 flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-sm font-bold">AI</div><div><div class="text-white font-semibold text-sm">LiveLearn Bot</div><div class="text-blue-200 text-xs">Always here to help</div></div></div><button id="closeChatbot" class="text-white/70 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
-    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" style="flex:1;overflow-y:auto"></div>
-    <div id="typingIndicator" class="hidden px-4 pb-2"><div class="flex gap-1 items-center"><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:150ms"></span><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:300ms"></span><span class="text-xs text-gray-400 ml-1">typing...</span></div></div>
-    <!-- Input bar: inline z-index:2147483647 (max 32-bit int) + pointer-events:all = guaranteed clickable regardless of stacking -->
-    <div style="position:relative; z-index:2147483647; padding:12px; border-top:1px solid #f3f4f6; background:#fff; border-radius:0 0 1rem 1rem; flex-shrink:0; pointer-events:all; display:flex; gap:8px;"><input type="text" id="chatInput" placeholder="Type a message..." style="pointer-events:all; z-index:2147483647;" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/><button id="sendChat" style="pointer-events:all; z-index:2147483647; position:relative;" class="bg-blue-600 text-white rounded-xl px-3 py-2 text-sm font-semibold hover:bg-blue-700 transition">→</button></div>
-  </div>
-
   <script src="js/axios.min.js"></script>
   <script src="js/api.js"></script>
-  <script src="js/chatbot.js"></script>
   <script src="js/teacher.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserInfo();
   initSidebar();
   initCart();
+  initNotifications();
   initSection('overview');
   loadSection('overview');
 });
@@ -67,12 +68,106 @@ function initSidebar() {
   });
 }
 
+// ─── Notifications ────────────────────────────
+function initNotifications() {
+  const btn = document.getElementById('notificationBtn');
+  const panel = document.getElementById('notificationPanel');
+  const markAllBtn = document.getElementById('markAllReadBtn');
+
+  if (!btn || !panel) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+      loadNotifications();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) {
+      panel.classList.add('hidden');
+    }
+  });
+
+  markAllBtn && markAllBtn.addEventListener('click', async () => {
+    try {
+      await StudentAPI.markAllNotifRead();
+      loadNotifications();
+    } catch (err) {
+      console.error('Failed to mark all as read');
+    }
+  });
+
+  // Initial load to set badge
+  loadNotifications();
+}
+
+async function loadNotifications() {
+  const list = document.getElementById('notificationList');
+  const badge = document.getElementById('notificationBadge');
+  if (!list) return;
+
+  try {
+    const res = await StudentAPI.getNotifications();
+    const notifs = res.data || [];
+    const unreadCount = notifs.filter(n => !n.isRead).length;
+
+    // Update badge
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    if (!notifs.length) {
+      list.innerHTML = '<div class="p-8 text-center text-gray-400"><div class="text-3xl mb-2">🔔</div><div class="text-sm font-medium">No new notifications</div></div>';
+      return;
+    }
+
+    list.innerHTML = notifs.map(n => `
+      <div class="p-4 hover:bg-gray-50 cursor-pointer transition flex gap-3 ${n.isRead ? 'opacity-60' : 'bg-blue-50/20'}" onclick="handleNotifClick('${n._id}', '${n.type}', '${n.courseId || ''}', '${(n.title || '').replace(/'/g, "\\'")}')">
+        <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${n.type === 'VIDEO_UPLOAD' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}">
+          ${n.type === 'VIDEO_UPLOAD' ? '🎥' : '✉️'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-bold text-gray-900 mb-0.5">${n.title}</div>
+          <div class="text-[11px] text-gray-500 leading-snug line-clamp-2">${n.message}</div>
+          <div class="text-[9px] text-gray-400 font-medium mt-1 flex items-center justify-between">
+            ${new Date(n.createdAt).toLocaleDateString()}
+            ${!n.isRead ? '<span class="w-2 h-2 bg-blue-600 rounded-full"></span>' : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    list.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Failed to load.</div>';
+  }
+}
+
+async function handleNotifClick(id, type, courseId, title) {
+  try {
+    await StudentAPI.markNotifRead(id);
+    loadNotifications();
+    if (type === 'VIDEO_UPLOAD' && courseId) {
+      openCoursePlayer(courseId, title || 'Course Content');
+    } else if (type === 'VIDEO_UPLOAD') {
+      initSection('my-courses');
+      loadSection('my-courses');
+    }
+  } catch (err) {
+    console.error('Failed to mark notification as read');
+  }
+}
+
 function initSection(name) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   const el = document.getElementById(`section-${name}`);
   if (el) el.classList.remove('hidden');
   const pageTitle = document.getElementById('pageTitle');
-  const titles = { overview: 'Overview', classes: 'Courses', videos: 'Watch Videos', notes: 'Download Notes', quiz: 'Take Quiz', doubt: 'Ask Doubt (AI)', books: 'Book Request', cart: 'Your Cart', orders: 'Order History', 'my-courses': 'My Courses', 'course-player': 'Course Player' };
+  const titles = { overview: 'Overview', classes: 'Courses', videos: 'Watch Videos', notes: 'Resources', quiz: 'Take Quiz', doubt: 'Ask Doubt (AI)', books: 'Book Request', cart: 'Your Cart', orders: 'Order History', 'my-courses': 'My Courses', 'course-player': 'Course Player' };
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 }
 
@@ -101,26 +196,40 @@ async function loadClasses() {
     const courses = Array.isArray(res.data) ? res.data : (res.data.classes || []);
     if (!courses.length) { grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-8">No classes found.</div>'; return; }
     const colors = ['bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-green-100 text-green-600', 'bg-yellow-100 text-yellow-600'];
+    const enrolledRes = await StudentAPI.getEnrolledCourses();
+    const enrolledCourses = Array.isArray(enrolledRes.data) ? enrolledRes.data : (enrolledRes.data.courses || []);
+    const enrolledIds = enrolledCourses.map(ec => ec._id || ec.id);
+
     const cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
     grid.innerHTML = courses.map((c, i) => {
-      const inCart = cart.some(item => item.id === (c._id || c.id));
-      const btnClass = inCart 
-        ? "bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold" 
-        : "bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition";
-      const btnText = inCart ? "Added to Cart" : "Add to Cart";
+      const courseId = c._id || c.id;
+      const isEnrolled = enrolledIds.includes(courseId);
+      const inCart = cart.some(item => item.id === courseId);
+      
+      let btnHtml;
+      if (isEnrolled) {
+        btnHtml = `<button class="bg-gray-200 text-gray-500 text-xs px-3 py-1.5 rounded-lg font-bold cursor-default" disabled>Purchased</button>`;
+      } else if (inCart) {
+        btnHtml = `<button class="bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold cursor-default">Added to Cart</button>`;
+      } else {
+        btnHtml = `<button class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition" onclick="addToCart('${courseId}', '${(c.title || c.name || '').replace(/'/g, "\\'")}', 499, this)">Add to Cart</button>`;
+      }
+      
+      const cardStyle = isEnrolled ? 'style="filter: grayscale(1); opacity: 0.8;"' : '';
       
       return `
-      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow relative" ${cardStyle}>
         <div class="flex items-center justify-between mb-4">
           <div class="w-11 h-11 ${colors[i % colors.length]} rounded-xl flex items-center justify-center font-bold text-lg">${(c.title || c.name || '?').charAt(0)}</div>
           <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Free</span>
+          ${isEnrolled ? '<span class="absolute top-4 right-4 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider">Owned</span>' : ''}
         </div>
-        <h3 class="font-semibold text-gray-900 text-sm mb-1">${c.title || c.name}</h3>
+        <h3 class="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">${c.title || c.name}</h3>
         <p class="text-xs text-gray-400 mb-3">👤 ${c.createdBy ? (c.createdBy.name || 'Teacher') : 'Teacher'}</p>
-        <div class="text-xs text-gray-500 mb-3">${c.description || ''}</div>
+        <div class="text-xs text-gray-500 mb-3 line-clamp-2">${c.description || 'Quality education for future leaders.'}</div>
         <div class="flex items-center justify-between">
           <span class="text-xs text-gray-400 font-bold">₹499</span>
-          <button class="${btnClass}" onclick="addToCart('${c._id || c.id}', '${(c.title || c.name || '').replace(/'/g, "\\'")}', 499, this)">${btnText}</button>
+          ${btnHtml}
         </div>
       </div>`
     }).join('');

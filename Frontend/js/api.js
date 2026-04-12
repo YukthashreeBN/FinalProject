@@ -80,6 +80,9 @@ const StudentAPI = {
   submitQuiz:          (id, answers) => api ? api.post(`/quizzes/${id}/submit`, { answers }) : simulateQuizSubmit(answers),
   requestBook:         (data) => api ? api.post('/book-requests', { bookName: data.title || data.bookName }) : simulateSuccess('Book request submitted!'),
   getRecommendedBooks: () => simulateBooks(), // No real endpoint – use simulation
+  getNotifications:    () => api ? api.get('/notifications')        : simulateNotifications(),
+  markNotifRead:       (id) => api ? api.put(`/notifications/${id}/read`) : simulateMarkRead(id),
+  markAllNotifRead:    () => api ? api.put('/notifications/read-all') : simulateMarkAllRead(),
 };
 
 // ─────────────── TEACHER ───────────────
@@ -345,4 +348,32 @@ async function simulatePayments() {
 async function simulateSuccess(message) {
   await simulateDelay(800);
   return { data: { success: true, message } };
+}
+
+// Notification Simulations
+async function simulateNotifications() {
+  await simulateDelay(400);
+  let notifs = JSON.parse(localStorage.getItem('ll_sim_notifs'));
+  if (!notifs) {
+    notifs = [
+      { _id: 'n1', type: 'VIDEO_UPLOAD', title: 'New Video Uploaded', message: 'A new video "01. Introduction" has been added to Full Stack Web Dev.', isRead: false, createdAt: new Date().toISOString() },
+      { _id: 'n2', type: 'GENERAL', title: 'Welcome!', message: 'Welcome to LiveLearn Plus. Explore your dashboard to get started.', isRead: true, createdAt: new Date(Date.now() - 86400000).toISOString() }
+    ];
+    localStorage.setItem('ll_sim_notifs', JSON.stringify(notifs));
+  }
+  return { data: notifs };
+}
+
+async function simulateMarkRead(id) {
+  let notifs = JSON.parse(localStorage.getItem('ll_sim_notifs')) || [];
+  notifs = notifs.map(n => n._id === id ? { ...n, isRead: true } : n);
+  localStorage.setItem('ll_sim_notifs', JSON.stringify(notifs));
+  return { data: { success: true } };
+}
+
+async function simulateMarkAllRead() {
+  let notifs = JSON.parse(localStorage.getItem('ll_sim_notifs')) || [];
+  notifs = notifs.map(n => ({ ...n, isRead: true }));
+  localStorage.setItem('ll_sim_notifs', JSON.stringify(notifs));
+  return { data: { success: true } };
 }

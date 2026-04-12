@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Dashboard – LiveLearn Plus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="bg-gray-50 flex">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 shadow-sm z-40 flex flex-col transition-transform duration-300 md:translate-x-0 -translate-x-full">
+    <div class="p-6 border-b border-gray-100">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-sm">L+</span></div>
+        <span style="font-family:'Sora',sans-serif" class="font-bold text-lg text-blue-700">LiveLearnPlus</span>
+      </a>
+    </div>
+    <nav class="flex-1 p-4 overflow-y-auto">
+      <p class="text-xs font-semibold text-gray-400 uppercase mb-3 px-2">Teaching</p>
+      <ul class="space-y-1">
+        <li><a href="#" class="sidebar-link active" data-section="overview"><span class="sidebar-icon">🏠</span>Overview</a></li>
+        <li><a href="#" class="sidebar-link" data-section="create-class"><span class="sidebar-icon">➕</span>Create Class</a></li>
+        <li><a href="#" class="sidebar-link" data-section="upload-notes"><span class="sidebar-icon">📄</span>Upload Notes</a></li>
+        <li><a href="#" class="sidebar-link" data-section="upload-video"><span class="sidebar-icon">🎥</span>Upload Video</a></li>
+        <li><a href="#" class="sidebar-link" data-section="create-quiz"><span class="sidebar-icon">📝</span>Create Quiz</a></li>
+      </ul>
+      <p class="text-xs font-semibold text-gray-400 uppercase mt-6 mb-3 px-2">Students</p>
+      <ul class="space-y-1">
+        <li><a href="#" class="sidebar-link" data-section="view-doubts"><span class="sidebar-icon">❓</span>View Doubts</a></li>
+        <li><a href="#" class="sidebar-link" data-section="recommend-books"><span class="sidebar-icon">📚</span>Recommend Books</a></li>
+      </ul>
+    </nav>
+    <div class="p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-sm">T</div>
+        <div><div class="text-sm font-semibold" id="sidebarName">Teacher</div><div class="text-xs text-gray-400">Teacher</div></div>
+      </div>
+      <button id="logoutBtn" class="w-full text-xs text-red-500 hover:text-red-700 text-left font-medium transition">← Logout</button>
+    </div>
+  </aside>
+
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+  <div class="flex-1 md:ml-64">
+    <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center gap-4">
+        <button id="sidebarToggle" class="md:hidden text-gray-500 hover:text-blue-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900" id="pageTitle">Teacher Dashboard</h1>
+      </div>
+    </header>
+
+    <main class="p-6">
+
+      <!-- Overview -->
+      <section id="section-overview" class="section-content">
+        <div class="mb-6">
+          <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-1">Teacher Dashboard 👩‍🏫</h2>
+          <p class="text-gray-500 text-sm">Manage your classes, content and students.</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-blue-600 mb-1">3</div><div class="text-xs text-gray-500">Active Classes</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-green-600 mb-1">48</div><div class="text-xs text-gray-500">Total Students</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-purple-600 mb-1">12</div><div class="text-xs text-gray-500">Videos Uploaded</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-orange-500 mb-1">7</div><div class="text-xs text-gray-500">Pending Doubts</div></div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-5">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 style="font-family:'Sora',sans-serif" class="font-bold text-base mb-4">Recent Doubts</h3>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3 p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+                <div class="w-7 h-7 bg-yellow-200 rounded-full flex items-center justify-center text-yellow-700 text-xs font-bold">R</div>
+                <div><div class="text-sm font-medium text-gray-800">Rahul S.</div><div class="text-xs text-gray-500 mt-0.5">How does integration by parts work?</div></div>
+              </div>
+              <div class="flex items-start gap-3 p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+                <div class="w-7 h-7 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 text-xs font-bold">P</div>
+                <div><div class="text-sm font-medium text-gray-800">Priya K.</div><div class="text-xs text-gray-500 mt-0.5">Can you explain conservation of momentum?</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 style="font-family:'Sora',sans-serif" class="font-bold text-base mb-4">Quick Actions</h3>
+            <div class="space-y-2">
+              <button class="sidebar-link-action w-full" data-section="create-class">➕ Create New Class</button>
+              <button class="sidebar-link-action w-full" data-section="upload-notes">📄 Upload Notes</button>
+              <button class="sidebar-link-action w-full" data-section="create-quiz">📝 Create Quiz</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Create Class -->
+      <section id="section-create-class" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Create Class</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-xl">
+          <form id="createClassForm">
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Class Name</label><input type="text" id="className" placeholder="e.g., Calculus 101" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Subject</label><input type="text" id="classSubject" placeholder="e.g., Mathematics" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Description</label><textarea id="classDesc" rows="3" placeholder="What will students learn?" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"></textarea></div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1.5">Schedule</label><input type="datetime-local" id="classSchedule" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1.5">Max Students</label><input type="number" id="classMax" placeholder="30" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+            </div>
+            <div class="mb-6"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Type</label><select id="classType" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"><option value="free">Free</option><option value="paid">Paid</option></select></div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition text-sm">Create Class</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Upload Notes -->
+      <section id="section-upload-notes" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Upload Notes</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-xl">
+          <form id="uploadNotesForm">
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Notes Title</label><input type="text" id="notesTitle" placeholder="e.g., Chapter 3 – Limits" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Subject</label><input type="text" id="notesSubject" placeholder="e.g., Mathematics" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Upload File</label>
+              <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 transition">
+                <div class="text-3xl mb-2">📁</div>
+                <p class="text-sm text-gray-500">Drag & drop or <span class="text-blue-600 font-medium">browse files</span></p>
+                <p class="text-xs text-gray-400 mt-1">PDF, DOC up to 10MB</p>
+                <input type="file" id="notesFile" class="hidden" accept=".pdf,.doc,.docx"/>
+              </div>
+              <div id="filePreview" class="hidden mt-3 flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+                <span class="text-2xl">📄</span>
+                <div class="flex-1"><div id="fileName" class="text-sm font-medium text-gray-800"></div><div id="fileSize" class="text-xs text-gray-500"></div></div>
+                <button type="button" id="removeFile" class="text-gray-400 hover:text-red-500 text-xs">✕</button>
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition text-sm">Upload Notes</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Upload Video -->
+      <section id="section-upload-video" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Upload Video</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-xl">
+          <form id="uploadVideoForm">
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Video Title</label><input type="text" id="videoTitle" placeholder="e.g., Introduction to Calculus" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/></div>
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Description</label><textarea id="videoDesc" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" placeholder="What is this video about?"></textarea></div>
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Video File or URL</label>
+              <input type="url" id="videoUrl" placeholder="Paste video URL (YouTube, Drive...)" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"/>
+              <div class="text-center text-xs text-gray-400">or</div>
+              <input type="file" id="videoFile" accept="video/*" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm mt-2"/>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition text-sm">Upload Video</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Create Quiz -->
+      <section id="section-create-quiz" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Create Quiz</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl">
+          <div class="mb-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Quiz Title</label>
+            <input type="text" id="quizTitle" placeholder="e.g., Calculus Chapter 1 Quiz" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+          </div>
+          <div id="quizQuestionsBuilder"><!-- questions added here --></div>
+          <button id="addQuestion" type="button" class="w-full border-2 border-dashed border-gray-200 text-gray-500 py-3 rounded-xl text-sm font-medium hover:border-blue-400 hover:text-blue-500 transition mt-4">+ Add Question</button>
+          <button id="saveQuiz" type="button" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition text-sm mt-4">Save Quiz</button>
+        </div>
+      </section>
+
+      <!-- View Doubts -->
+      <section id="section-view-doubts" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Student Doubts</h2>
+        <div id="doubtsList" class="space-y-4 max-w-2xl"><!-- populated by JS --></div>
+      </section>
+
+      <!-- Recommend Books -->
+      <section id="section-recommend-books" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Recommend Books</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-xl">
+          <form id="recommendBookForm">
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Book Title</label><input type="text" id="recBookTitle" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="e.g., Higher Engineering Mathematics"/></div>
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Author</label><input type="text" id="recBookAuthor" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="e.g., B.S. Grewal"/></div>
+            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Subject</label><input type="text" id="recBookSubject" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="e.g., Mathematics"/></div>
+            <div class="mb-6"><label class="block text-sm font-semibold text-gray-700 mb-1.5">Notes</label><textarea id="recBookNotes" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" placeholder="Why do you recommend this?"></textarea></div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition text-sm">Recommend Book</button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Chatbot -->
+  <!-- bottom-28 (112px) sits ABOVE the chat window bottom (96px) — zero overlap possible -->
+  <button id="chatbotToggle" class="fixed bottom-28 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition z-20 flex items-center justify-center text-2xl">💬</button>
+  <!-- z-[9999]: highest on page. overflow:visible so child z-indexes are NOT collapsed -->
+  <div id="chatbotWindow" class="fixed bottom-24 right-6 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] hidden flex-col" style="height:420px; overflow:visible;">
+    <div class="bg-blue-600 p-4 flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-sm font-bold">AI</div><div><div class="text-white font-semibold text-sm">LiveLearn Bot</div><div class="text-blue-200 text-xs">Always here to help</div></div></div><button id="closeChatbot" class="text-white/70 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" style="flex:1;overflow-y:auto"></div>
+    <div id="typingIndicator" class="hidden px-4 pb-2"><div class="flex gap-1 items-center"><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:150ms"></span><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:300ms"></span><span class="text-xs text-gray-400 ml-1">typing...</span></div></div>
+    <!-- Input bar: inline z-index:2147483647 (max 32-bit int) + pointer-events:all = guaranteed clickable regardless of stacking -->
+    <div style="position:relative; z-index:2147483647; padding:12px; border-top:1px solid #f3f4f6; background:#fff; border-radius:0 0 1rem 1rem; flex-shrink:0; pointer-events:all; display:flex; gap:8px;"><input type="text" id="chatInput" placeholder="Type a message..." style="pointer-events:all; z-index:2147483647;" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/><button id="sendChat" style="pointer-events:all; z-index:2147483647; position:relative;" class="bg-blue-600 text-white rounded-xl px-3 py-2 text-sm font-semibold hover:bg-blue-700 transition">→</button></div>
+  </div>
+
+  <script src="js/axios.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/teacher.js"></script>
+</body>
+</html>

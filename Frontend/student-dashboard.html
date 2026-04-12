@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard – LiveLearn Plus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="bg-gray-50 flex">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 shadow-sm z-40 flex flex-col transition-transform duration-300 md:translate-x-0 -translate-x-full">
+    <div class="p-6 border-b border-gray-100">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-sm">L+</span></div>
+        <span style="font-family:'Sora',sans-serif" class="font-bold text-lg text-blue-700">LiveLearnPlus</span>
+      </a>
+    </div>
+    <nav class="flex-1 p-4 overflow-y-auto">
+      <p class="text-xs font-semibold text-gray-400 uppercase mb-3 px-2">Learning</p>
+      <ul class="space-y-1">
+        <li><a href="#" class="sidebar-link active" data-section="overview"><span class="sidebar-icon">🏠</span>Overview</a></li>
+        <li><a href="#" class="sidebar-link" data-section="classes"><span class="sidebar-icon">📖</span>My Classes</a></li>
+        <li><a href="#" class="sidebar-link" data-section="videos"><span class="sidebar-icon">🎥</span>Watch Videos</a></li>
+        <li><a href="#" class="sidebar-link" data-section="notes"><span class="sidebar-icon">📄</span>Download Notes</a></li>
+        <li><a href="#" class="sidebar-link" data-section="quiz"><span class="sidebar-icon">📝</span>Take Quiz</a></li>
+      </ul>
+      <p class="text-xs font-semibold text-gray-400 uppercase mt-6 mb-3 px-2">Support</p>
+      <ul class="space-y-1">
+        <li><a href="#" class="sidebar-link" data-section="doubt"><span class="sidebar-icon">🤖</span>Ask Doubt (AI)</a></li>
+        <li><a href="#" class="sidebar-link" data-section="books"><span class="sidebar-icon">📚</span>Book Request</a></li>
+        <li><a href="payment.html" class="sidebar-link"><span class="sidebar-icon">💳</span>Payments</a></li>
+      </ul>
+    </nav>
+    <div class="p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm" id="sidebarAvatar">S</div>
+        <div><div class="text-sm font-semibold" id="sidebarName">Student</div><div class="text-xs text-gray-400">Student</div></div>
+      </div>
+      <button id="logoutBtn" class="w-full text-xs text-red-500 hover:text-red-700 text-left font-medium transition">← Logout</button>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+  <!-- Main -->
+  <div class="flex-1 md:ml-64">
+    <!-- Topbar -->
+    <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center gap-4">
+        <button id="sidebarToggle" class="md:hidden text-gray-500 hover:text-blue-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900" id="pageTitle">Overview</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <button class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-blue-50 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </button>
+          <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="p-6">
+
+      <!-- Overview Section -->
+      <section id="section-overview" class="section-content">
+        <div class="mb-6">
+          <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-1">Good morning, <span id="greetName">Student</span>! 👋</h2>
+          <p class="text-gray-500 text-sm">Here's what's happening with your learning today.</p>
+        </div>
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="text-2xl font-bold text-blue-600 mb-1">4</div>
+            <div class="text-xs text-gray-500">Enrolled Classes</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="text-2xl font-bold text-green-600 mb-1">12</div>
+            <div class="text-xs text-gray-500">Videos Watched</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="text-2xl font-bold text-purple-600 mb-1">5</div>
+            <div class="text-xs text-gray-500">Quizzes Taken</div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+            <div class="text-2xl font-bold text-orange-500 mb-1">87%</div>
+            <div class="text-xs text-gray-500">Avg. Score</div>
+          </div>
+        </div>
+        <!-- Recent classes -->
+        <h3 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900 mb-4">Upcoming Classes</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg">M</div>
+            <div class="flex-1">
+              <div class="font-semibold text-sm text-gray-900">Mathematics – Calculus</div>
+              <div class="text-xs text-gray-400 mt-0.5">Prof. Sharma • Today 3:00 PM</div>
+              <div class="mt-2"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Live Soon</span></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4">
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 font-bold text-lg">P</div>
+            <div class="flex-1">
+              <div class="font-semibold text-sm text-gray-900">Physics – Mechanics</div>
+              <div class="text-xs text-gray-400 mt-0.5">Prof. Kapoor • Tomorrow 11:00 AM</div>
+              <div class="mt-2"><span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">Scheduled</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Classes Section -->
+      <section id="section-classes" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">My Classes</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="classesGrid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Videos Section -->
+      <section id="section-videos" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Watch Videos</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="videosGrid"><!-- populated by JS --></div>
+        <!-- Video Modal -->
+        <div id="videoModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div class="flex items-center justify-between p-4 border-b">
+              <h3 style="font-family:'Sora',sans-serif" class="font-bold text-lg" id="videoTitle">Video Title</h3>
+              <button id="closeVideoModal" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <div class="bg-black aspect-video flex items-center justify-center">
+              <video id="videoPlayer" controls class="w-full h-full">
+                <source src="" type="video/mp4"/>
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div class="p-4 flex justify-end">
+              <button id="downloadVideoBtn" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">⬇ Download</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notes Section -->
+      <section id="section-notes" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Download Notes</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-gray-100 flex items-center gap-3">
+            <input type="text" placeholder="Search notes..." class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+            <select class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+              <option>All Subjects</option>
+              <option>Mathematics</option>
+              <option>Physics</option>
+              <option>Chemistry</option>
+            </select>
+          </div>
+          <div id="notesList" class="divide-y divide-gray-50"><!-- populated by JS --></div>
+        </div>
+      </section>
+
+      <!-- Quiz Section -->
+      <section id="section-quiz" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Take a Quiz</h2>
+        <div id="quizSelector" class="grid md:grid-cols-3 gap-4 mb-6"><!-- quiz cards --></div>
+        <div id="quizContainer" class="hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl"><!-- quiz content --></div>
+      </section>
+
+      <!-- Doubt Section -->
+      <section id="section-doubt" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Ask AI Doubt Solver</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm max-w-2xl overflow-hidden">
+          <div class="p-4 border-b border-gray-100 bg-blue-50 flex items-center gap-3">
+            <div class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">AI</div>
+            <div><div class="font-semibold text-sm">LiveLearn AI</div><div class="text-xs text-gray-500">Answers your academic doubts instantly</div></div>
+            <span class="ml-auto w-2 h-2 bg-green-500 rounded-full"></span>
+          </div>
+          <div id="doubtChatMessages" class="h-80 overflow-y-auto p-4 space-y-4">
+            <div class="flex gap-3">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-bold flex-shrink-0">AI</div>
+              <div class="bg-blue-50 rounded-xl rounded-tl-none p-3 text-sm text-gray-700 max-w-xs">Hi! I'm your AI doubt solver. Ask me any academic question and I'll help you understand it clearly. 📚</div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-gray-100 flex gap-3">
+            <input type="text" id="doubtInput" placeholder="Type your doubt here..." class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+            <button id="sendDoubt" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition">Send</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Books Section -->
+      <section id="section-books" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Book Request</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">Request a Book</h3>
+            <form id="bookRequestForm">
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">Book Title</label><input type="text" id="bookTitle" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Enter book name"/></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">Subject</label><input type="text" id="bookSubject" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="e.g., Mathematics"/></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1">Reason</label><textarea id="bookReason" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" rows="3" placeholder="Why do you need this book?"></textarea></div>
+              <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition">Submit Request</button>
+            </form>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">Recommended Books</h3>
+            <div id="recommendedBooksList" class="space-y-3"><!-- populated by JS --></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Floating Chatbot Button -->
+  <!-- bottom-28 (112px) sits ABOVE the chat window bottom (96px) — zero overlap possible -->
+  <!-- z-20: lowest fixed priority so window always wins -->
+  <button id="chatbotToggle" class="fixed bottom-28 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition z-20 flex items-center justify-center text-2xl">💬</button>
+
+  <!-- Chatbot UI -->
+  <!-- z-[9999]: highest on page. overflow:visible so child z-indexes are NOT collapsed -->
+  <div id="chatbotWindow" class="fixed bottom-24 right-6 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] hidden flex-col" style="height:420px; overflow:visible;">
+    <div class="bg-blue-600 p-4 flex items-center justify-between" style="border-radius:1rem 1rem 0 0; flex-shrink:0;">
+      <div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white text-sm font-bold">AI</div><div><div class="text-white font-semibold text-sm">LiveLearn Bot</div><div class="text-blue-200 text-xs">Always here to help</div></div></div>
+      <button id="closeChatbot" class="text-white/70 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div id="chatMessages" class="p-4 space-y-3 bg-gray-50" style="flex:1; overflow-y:auto;"></div>
+    <div id="typingIndicator" class="hidden px-4 pb-2" style="flex-shrink:0;"><div class="flex gap-1 items-center"><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0ms"></span><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:150ms"></span><span class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay:300ms"></span><span class="text-xs text-gray-400 ml-1">Bot is typing...</span></div></div>
+    <!-- Input bar: inline z-index:2147483647 (max 32-bit int) + pointer-events:all = guaranteed clickable regardless of stacking -->
+    <div style="position:relative; z-index:2147483647; padding:12px; border-top:1px solid #f3f4f6; background:#fff; border-radius:0 0 1rem 1rem; flex-shrink:0; pointer-events:all; display:flex; gap:8px;">
+      <input type="text" id="chatInput" placeholder="Type a message..." style="pointer-events:all; z-index:2147483647;" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+      <button id="sendChat" style="pointer-events:all; z-index:2147483647; position:relative;" class="bg-blue-600 text-white rounded-xl px-3 py-2 text-sm font-semibold hover:bg-blue-700 transition">→</button>
+    </div>
+  </div>
+
+  <script src="js/axios.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/student.js"></script>
+</body>
+</html>

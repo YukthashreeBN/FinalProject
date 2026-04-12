@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard – LiveLearn Plus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body class="bg-gray-50 flex">
+
+  <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-100 shadow-sm z-40 flex flex-col transition-transform duration-300 md:translate-x-0 -translate-x-full">
+    <div class="p-6 border-b border-gray-100">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-sm">A</span></div>
+        <span style="font-family:'Sora',sans-serif" class="font-bold text-lg text-red-700">Admin Panel</span>
+      </a>
+    </div>
+    <nav class="flex-1 p-4 overflow-y-auto">
+      <ul class="space-y-1">
+        <li><a href="#" class="sidebar-link active" data-section="overview"><span class="sidebar-icon">📊</span>Overview</a></li>
+        <li><a href="#" class="sidebar-link" data-section="users"><span class="sidebar-icon">👥</span>Manage Users</a></li>
+        <li><a href="#" class="sidebar-link" data-section="teachers"><span class="sidebar-icon">👩‍🏫</span>Approve Teachers</a></li>
+        <li><a href="#" class="sidebar-link" data-section="activity"><span class="sidebar-icon">📈</span>Platform Activity</a></li>
+        <li><a href="#" class="sidebar-link" data-section="payments"><span class="sidebar-icon">💰</span>Payments</a></li>
+      </ul>
+    </nav>
+    <div class="p-4 border-t border-gray-100">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-sm">A</div>
+        <div><div class="text-sm font-semibold">Admin</div><div class="text-xs text-gray-400">Administrator</div></div>
+      </div>
+      <button id="logoutBtn" class="w-full text-xs text-red-500 hover:text-red-700 text-left font-medium">← Logout</button>
+    </div>
+  </aside>
+
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+  <div class="flex-1 md:ml-64">
+    <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+      <div class="flex items-center gap-4">
+        <button id="sidebarToggle" class="md:hidden text-gray-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900" id="pageTitle">Admin Overview</h1>
+      </div>
+    </header>
+
+    <main class="p-6">
+
+      <!-- Overview -->
+      <section id="section-overview" class="section-content">
+        <div class="mb-6">
+          <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-1">Platform Overview 📊</h2>
+          <p class="text-gray-500 text-sm">Monitor all platform activity and metrics.</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-blue-600 mb-1">12,485</div><div class="text-xs text-gray-500">Total Students</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-green-600 mb-1">834</div><div class="text-xs text-gray-500">Active Teachers</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-purple-600 mb-1">324</div><div class="text-xs text-gray-500">Active Courses</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-orange-500 mb-1">₹4.2L</div><div class="text-xs text-gray-500">Revenue (Month)</div></div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-5">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 style="font-family:'Sora',sans-serif" class="font-bold text-base mb-4">Pending Approvals</h3>
+            <div class="space-y-3" id="pendingApprovals">
+              <div class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+                <div class="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center text-yellow-700 font-bold text-sm">A</div>
+                <div class="flex-1"><div class="text-sm font-medium">Amit Verma</div><div class="text-xs text-gray-500">Teacher • Physics</div></div>
+                <div class="flex gap-2">
+                  <button class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg font-semibold hover:bg-green-200">Approve</button>
+                  <button class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg font-semibold hover:bg-red-200">Reject</button>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+                <div class="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm">S</div>
+                <div class="flex-1"><div class="text-sm font-medium">Sneha Iyer</div><div class="text-xs text-gray-500">Teacher • Chemistry</div></div>
+                <div class="flex gap-2">
+                  <button class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg font-semibold hover:bg-green-200">Approve</button>
+                  <button class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg font-semibold hover:bg-red-200">Reject</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 style="font-family:'Sora',sans-serif" class="font-bold text-base mb-4">Recent Payments</h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-sm p-2 border-b border-gray-50">
+                <span class="text-gray-700">Rahul S. – Calculus Pro</span>
+                <span class="text-green-600 font-semibold">₹499</span>
+              </div>
+              <div class="flex items-center justify-between text-sm p-2 border-b border-gray-50">
+                <span class="text-gray-700">Priya K. – Physics Elite</span>
+                <span class="text-green-600 font-semibold">₹799</span>
+              </div>
+              <div class="flex items-center justify-between text-sm p-2">
+                <span class="text-gray-700">Arjun M. – Chemistry</span>
+                <span class="text-green-600 font-semibold">₹599</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Users -->
+      <section id="section-users" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Manage Users</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-gray-100 flex items-center gap-3">
+            <input type="text" id="userSearch" placeholder="Search by name or email..." class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+            <select id="userRoleFilter" class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option>All Roles</option><option>Student</option><option>Teacher</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">User</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Role</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Status</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Joined</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody" class="divide-y divide-gray-50"><!-- populated by JS --></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Approve Teachers -->
+      <section id="section-teachers" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Approve Teachers</h2>
+        <div id="teacherApprovalList" class="space-y-4 max-w-2xl"><!-- populated by JS --></div>
+      </section>
+
+      <!-- Activity -->
+      <section id="section-activity" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Platform Activity</h2>
+        <div class="grid md:grid-cols-2 gap-5 mb-6">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 class="font-semibold text-gray-900 mb-4">Daily Active Users</h3>
+            <div class="space-y-2">
+              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Mon</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:72%"></div></div><span class="text-xs text-gray-600">720</span></div>
+              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Tue</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:85%"></div></div><span class="text-xs text-gray-600">850</span></div>
+              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Wed</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:60%"></div></div><span class="text-xs text-gray-600">600</span></div>
+              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Thu</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:90%"></div></div><span class="text-xs text-gray-600">900</span></div>
+              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Fri</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:78%"></div></div><span class="text-xs text-gray-600">780</span></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 class="font-semibold text-gray-900 mb-4">Content Stats</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-blue-50 rounded-xl"><span class="text-sm text-gray-700">Videos Watched Today</span><span class="font-bold text-blue-600">1,240</span></div>
+              <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl"><span class="text-sm text-gray-700">Notes Downloaded</span><span class="font-bold text-green-600">340</span></div>
+              <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl"><span class="text-sm text-gray-700">Quizzes Attempted</span><span class="font-bold text-purple-600">520</span></div>
+              <div class="flex justify-between items-center p-3 bg-orange-50 rounded-xl"><span class="text-sm text-gray-700">AI Doubts Solved</span><span class="font-bold text-orange-500">890</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Payments -->
+      <section id="section-payments" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Payment Records</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <input type="text" placeholder="Search payments..." class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+            </div>
+            <span class="text-sm text-gray-500">Total: <span class="text-green-600 font-bold">₹4,20,350</span></span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Order ID</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Student</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Course</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Amount</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Status</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Date</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTableBody" class="divide-y divide-gray-50"><!-- populated by JS --></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/axios.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -6,10 +6,13 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 // ── Rate limiter: 20 requests per minute per user ──
+const { ipKeyGenerator } = require("express-rate-limit");  
+
+require("dotenv").config();
 const chatLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 20,
-    keyGenerator: (req) => req.user?.id || req.ip,
+    keyGenerator: (req) => req.user?.id || ipKeyGenerator(req),
     message: { reply: "Too many requests. Please wait a moment and try again." },
     standardHeaders: true,
     legacyHeaders: false,

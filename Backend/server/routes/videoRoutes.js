@@ -42,4 +42,16 @@ router.get("/", authMiddleware, async (req, res) => {
     }
 });
 
+// Get videos for a specific course
+router.get("/course/:courseId", authMiddleware, async (req, res) => {
+    try {
+        const videos = await Video.find({ courseId: req.params.courseId })
+                                  .populate("uploadedBy", "name")
+                                  .sort({ createdAt: 1 });
+        res.status(200).json(videos);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch course videos." });
+    }
+});
+
 module.exports = router;

@@ -71,12 +71,14 @@ const AuthAPI = {
 //   POST /api/quizzes/:id/submit  → submit quiz (protected)
 //   POST /api/book-requests       → request a book (protected)
 const StudentAPI = {
-  getClasses:     () => api ? api.get('/courses/all')          : simulateClasses(),
-  getVideos:      () => api ? api.get('/videos')               : simulateVideos(),
-  getNotes:       () => api ? api.get('/notes')                : simulateNotes(),
-  getQuizzes:     () => api ? api.get('/quizzes')              : simulateQuizzes(),
-  submitQuiz:     (id, answers) => api ? api.post(`/quizzes/${id}/submit`, { answers }) : simulateQuizSubmit(answers),
-  requestBook:    (data) => api ? api.post('/book-requests', { bookName: data.title || data.bookName }) : simulateSuccess('Book request submitted!'),
+  getClasses:          () => api ? api.get('/courses/all')           : simulateClasses(),
+  getEnrolledCourses:  () => api ? api.get('/courses/enrolled')      : simulateEnrolledCourses(),
+  getVideos:           () => api ? api.get('/videos')                : simulateVideos(),
+  getCourseVideos:     (id) => api ? api.get(`/videos/course/${id}`) : simulateCourseVideos(id),
+  getNotes:            () => api ? api.get('/notes')                 : simulateNotes(),
+  getQuizzes:          () => api ? api.get('/quizzes')               : simulateQuizzes(),
+  submitQuiz:          (id, answers) => api ? api.post(`/quizzes/${id}/submit`, { answers }) : simulateQuizSubmit(answers),
+  requestBook:         (data) => api ? api.post('/book-requests', { bookName: data.title || data.bookName }) : simulateSuccess('Book request submitted!'),
   getRecommendedBooks: () => simulateBooks(), // No real endpoint – use simulation
 };
 
@@ -148,7 +150,11 @@ const ChatbotAPI = {
 // ─────────────── PAYMENT ───────────────
 // POST /api/create-order    → placeholder route
 // POST /api/verify-payment  → placeholder route
+// GET  /api/orders          → placeholder route
 const PaymentAPI = {
+  getOrders: () => 
+    api ? api.get('/payment/orders') : simulateGetOrders(),
+
   createOrder: (courseId, amount, courseName, paymentMethod) =>
     api ? api.post('/payment/create-order', { courseId, amount, courseName, paymentMethod }) : simulateOrder(courseId, amount),
 
@@ -209,9 +215,25 @@ async function simulateClasses() {
 async function simulateVideos() {
   await simulateDelay(600);
   return { data: [
-    { _id: '1', title: 'Introduction to Limits', description: 'Mathematics', uploadedBy: { name: 'Prof. Sharma' }, filePath: '' },
-    { _id: '2', title: "Newton's Laws of Motion", description: 'Physics', uploadedBy: { name: 'Prof. Kapoor' }, filePath: '' },
-    { _id: '3', title: 'Organic Reactions – Part 1', description: 'Chemistry', uploadedBy: { name: 'Dr. Mehta' }, filePath: '' },
+    { _id: 'v1', title: 'Introduction to Limits', description: 'Mathematics', uploadedBy: { name: 'Prof. Sharma' }, filePath: '' },
+    { _id: 'v2', title: "Newton's Laws of Motion", description: 'Physics', uploadedBy: { name: 'Prof. Kapoor' }, filePath: '' },
+    { _id: 'v3', title: 'Organic Reactions – Part 1', description: 'Chemistry', uploadedBy: { name: 'Dr. Mehta' }, filePath: '' },
+  ] };
+}
+
+async function simulateEnrolledCourses() {
+  await simulateDelay(600);
+  return { data: [
+    { _id: '1', title: 'Advanced Calculus', description: 'Mathematics – Mon, Wed 3:00 PM', createdBy: { name: 'Prof. Sharma' } },
+  ] };
+}
+
+async function simulateCourseVideos(courseId) {
+  await simulateDelay(600);
+  return { data: [
+    { _id: 'v1', title: 'Module 1: Getting Started', description: 'Overview of the course.', uploadedBy: { name: 'Prof. Sharma' }, filePath: '' },
+    { _id: 'v2', title: 'Module 2: Depth Analysis', description: 'Technical deep dive.', uploadedBy: { name: 'Prof. Sharma' }, filePath: '' },
+    { _id: 'v3', title: 'Module 3: Project Work', description: 'Applying what we learned.', uploadedBy: { name: 'Prof. Sharma' }, filePath: '' },
   ] };
 }
 
@@ -280,6 +302,14 @@ async function simulateChatResponse(message) {
 async function simulateOrder(courseId, amount) {
   await simulateDelay(1000);
   return { data: { orderId: 'LL-' + Date.now(), amount, currency: 'INR' } };
+}
+
+async function simulateGetOrders() {
+  await simulateDelay(800);
+  return { data: { success: true, orders: [
+    { orderId: 'LL-12345', courseName: 'Advanced Calculus', amount: 499, currency: 'INR', status: 'success', createdAt: new Date().toISOString() },
+    { orderId: 'LL-67890', courseName: 'Classical Mechanics', amount: 799, currency: 'INR', status: 'success', createdAt: new Date(Date.now() - 86400000).toISOString() }
+  ] } };
 }
 
 async function simulateVerify() {

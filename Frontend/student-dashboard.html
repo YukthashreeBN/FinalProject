@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css"/>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body class="bg-gray-50 flex">
 
@@ -22,8 +23,8 @@
       <p class="text-xs font-semibold text-gray-400 uppercase mb-3 px-2">Learning</p>
       <ul class="space-y-1">
         <li><a href="#" class="sidebar-link active" data-section="overview"><span class="sidebar-icon">🏠</span>Overview</a></li>
-        <li><a href="#" class="sidebar-link" data-section="classes"><span class="sidebar-icon">📖</span>My Classes</a></li>
-        <li><a href="#" class="sidebar-link" data-section="videos"><span class="sidebar-icon">🎥</span>Watch Videos</a></li>
+        <li><a href="#" class="sidebar-link" data-section="classes"><span class="sidebar-icon">📖</span>Courses</a></li>
+        <li><a href="#" class="sidebar-link" data-section="my-courses"><span class="sidebar-icon">🎓</span>My Courses</a></li>
         <li><a href="#" class="sidebar-link" data-section="notes"><span class="sidebar-icon">📄</span>Download Notes</a></li>
         <li><a href="#" class="sidebar-link" data-section="quiz"><span class="sidebar-icon">📝</span>Take Quiz</a></li>
       </ul>
@@ -31,7 +32,7 @@
       <ul class="space-y-1">
         <li><a href="#" class="sidebar-link" data-section="doubt"><span class="sidebar-icon">🤖</span>Ask Doubt (AI)</a></li>
         <li><a href="#" class="sidebar-link" data-section="books"><span class="sidebar-icon">📚</span>Book Request</a></li>
-        <li><a href="payment.html" class="sidebar-link"><span class="sidebar-icon">💳</span>Payments</a></li>
+        <li><a href="#" class="sidebar-link" data-section="orders"><span class="sidebar-icon">📦</span>Order History</a></li>
       </ul>
     </nav>
     <div class="p-4 border-t border-gray-100">
@@ -56,7 +57,13 @@
         </button>
         <h1 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900" id="pageTitle">Overview</h1>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <button class="cart-toggle-btn w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-blue-50 transition" title="Your Cart">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          </button>
+          <span id="cartBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-sm">0</span>
+        </div>
         <div class="relative">
           <button class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-blue-50 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -118,31 +125,84 @@
 
       <!-- Classes Section -->
       <section id="section-classes" class="section-content hidden">
-        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">My Classes</h2>
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Courses</h2>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="classesGrid">
           <!-- Populated by JS -->
         </div>
       </section>
 
-      <!-- Videos Section -->
-      <section id="section-videos" class="section-content hidden">
-        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Watch Videos</h2>
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="videosGrid"><!-- populated by JS --></div>
-        <!-- Video Modal -->
-        <div id="videoModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-          <div class="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
-            <div class="flex items-center justify-between p-4 border-b">
-              <h3 style="font-family:'Sora',sans-serif" class="font-bold text-lg" id="videoTitle">Video Title</h3>
-              <button id="closeVideoModal" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-            </div>
-            <div class="bg-black aspect-video flex items-center justify-center">
-              <video id="videoPlayer" controls class="w-full h-full">
+      <!-- My Courses Section (Replaces Videos) -->
+      <section id="section-my-courses" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6 font-display">My Courses</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="myCoursesGrid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Course Player Section -->
+      <section id="section-course-player" class="section-content hidden p-0 max-w-none">
+        <div class="flex items-center gap-4 mb-6">
+          <button onclick="initSection('my-courses'); loadSection('my-courses');" class="bg-white border border-gray-100 p-2 rounded-xl text-gray-500 hover:text-blue-600 transition shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          </button>
+          <div>
+            <h2 id="currentPlayerCourseTitle" class="text-xl font-bold text-gray-900 leading-tight">Course Title</h2>
+            <div class="text-xs text-gray-400">Back to Library</div>
+          </div>
+        </div>
+        
+        <div class="grid lg:grid-cols-12 gap-6 items-start">
+          <!-- Main Player -->
+          <div class="lg:col-span-8">
+            <div class="bg-black rounded-3xl overflow-hidden shadow-2xl shadow-blue-100 aspect-video group relative">
+              <video id="courseVideoPlayer" controls class="w-full h-full">
                 <source src="" type="video/mp4"/>
-                Your browser does not support the video tag.
               </video>
+              <div id="videoPlaceholder" class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center text-white p-8 text-center">
+                <div class="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mb-4 text-4xl animate-pulse">📺</div>
+                <h3 class="text-xl font-bold mb-2">Select a video to start learning</h3>
+                <p class="text-gray-400 text-sm max-w-md">Your playlist on the right contains all the modules available in this course.</p>
+              </div>
             </div>
-            <div class="p-4 flex justify-end">
-              <button id="downloadVideoBtn" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">⬇ Download</button>
+            
+            <div class="mt-6 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                 <h3 id="currentVideoTitle" class="text-xl font-bold text-gray-900">Introduction to the Course</h3>
+                 <span class="bg-blue-50 text-blue-600 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">Lesson 01</span>
+              </div>
+              <p id="currentVideoDesc" class="text-gray-500 text-sm leading-relaxed">In this module, we will cover the foundational principles that this course is built upon.</p>
+              
+              <div class="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">L+</div>
+                  <div>
+                    <div class="text-sm font-bold text-gray-900">LiveLearn Plus Faculty</div>
+                    <div class="text-xs text-gray-400">Instructor • Expert in Subject</div>
+                  </div>
+                </div>
+                <button class="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl text-sm font-semibold transition text-gray-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  Resources
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Playlist Sidebar -->
+          <div class="lg:col-span-4 lg:sticky lg:top-24">
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col max-h-[calc(100vh-160px)]">
+              <div class="p-5 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-gray-900">Module Playlist</h3>
+                  <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5" id="playlistCount">0 LESSONS</p>
+                </div>
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                </div>
+              </div>
+              <div id="coursePlaylist" class="overflow-y-auto divide-y divide-gray-50">
+                <!-- Playlist items populated by JS -->
+              </div>
             </div>
           </div>
         </div>
@@ -214,6 +274,39 @@
         </div>
       </section>
 
+      <!-- Cart Section -->
+      <section id="section-cart" class="section-content hidden max-w-4xl mx-auto">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          Your Cart <span id="cartBadge" class="hidden bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+        </h2>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100" id="cartItemsContainer">
+        </div>
+        <div class="mt-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="text-lg">
+            <span class="text-gray-500">Subtotal:</span>
+            <span id="cartSubtotal" class="font-bold text-gray-900 ml-2">₹0</span>
+          </div>
+          <div class="text-xl">
+            <span class="text-gray-500">Total:</span>
+            <span id="cartTotal" class="font-black text-blue-600 ml-2 text-2xl">₹0</span>
+          </div>
+          <button id="checkoutBtn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-blue-700 transition flex items-center gap-2 shadow-lg shadow-blue-200" disabled>
+            Checkout securely
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Order History Section -->
+      <section id="section-orders" class="section-content hidden max-w-5xl mx-auto">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Order History</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div id="ordersContainer" class="space-y-4">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -238,9 +331,90 @@
     </div>
   </div>
 
+  <!-- Razorpay-like Animation Loader -->
+  <div id="razorpayLoader" class="fixed inset-0 bg-white/90 z-[9999] hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0">
+    <div class="relative w-16 h-16 flex items-center justify-center mb-4">
+      <div class="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+      <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+      <div class="w-6 h-6 bg-blue-600 rounded-sm transform rotate-45 animate-pulse"></div>
+    </div>
+    <p class="font-semibold text-gray-800 tracking-wide text-sm animate-pulse">Opening Secure Checkout...</p>
+    <p class="text-xs text-gray-400 mt-1">Powered by LiveLearn simulated gateway</p>
+  </div>
+
+  <!-- Simulated Payment Modal -->
+  <div id="simulatedPaymentModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl transform transition-all relative">
+      <div class="bg-blue-600 p-6 text-center">
+        <svg class="w-12 h-12 text-white mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <h3 class="font-bold text-xl text-white">LiveLearnPlus Secure Checkout</h3>
+        <p class="text-blue-100 text-sm mt-1">Test Mode Environment</p>
+      </div>
+      <div class="p-6">
+        <div class="text-center mb-6">
+          <p class="text-gray-500 text-sm">Total Amount to Pay</p>
+          <p class="text-3xl font-extrabold text-gray-900 mt-1" id="simulatedAmountDisplay">₹0</p>
+        </div>
+        <div class="space-y-3">
+          <button id="simulatedPaySuccessBtn" class="w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2">
+            ✅ Simulate Success
+          </button>
+          <button id="simulatedPayFailBtn" class="w-full bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 transition flex items-center justify-center gap-2">
+            ❌ Simulate Failure
+          </button>
+          <button id="closeSimulatedModalBtn" class="w-full text-gray-500 font-medium py-2 rounded-xl hover:bg-gray-50 transition text-sm">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulated Bill / Receipt Modal -->
+  <div id="billModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+      <div class="bg-green-50 px-6 py-8 border-b border-green-100 text-center">
+        <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h3 class="font-black text-2xl text-green-800">Payment Successful!</h3>
+        <p class="text-green-600 mt-1 font-medium text-sm">An email receipt has been sent to you.</p>
+      </div>
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-5 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100">
+          <span class="text-gray-500 font-medium">Transaction ID</span>
+          <span class="font-mono font-bold text-gray-900" id="billTxnId">N/A</span>
+        </div>
+        <div class="mb-6">
+          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Order Details</h4>
+          <div id="billItemsList" class="space-y-3 font-medium text-sm text-gray-800"></div>
+        </div>
+        <div class="border-t border-gray-200 pt-4 flex justify-between items-center bg-blue-50/50 -mx-6 px-6 pb-2">
+          <span class="font-bold text-gray-700">Total Paid</span>
+          <span class="text-2xl font-black text-blue-600" id="billTotalAmount">₹0</span>
+        </div>
+      </div>
+      <div class="px-6 pb-6 pt-2 grid grid-cols-2 gap-3 bg-blue-50/50">
+        <button onclick="window.print()" class="w-full bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition flex justify-center items-center gap-2 shadow-sm text-sm">
+          🖨️ Print
+        </button>
+        <button id="closeBillBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 text-sm">
+          Close
+        </button>
+      </div>
+      <!-- Email Receipt Link Container injected here -->
+      <div id="emailReceiptContainer" class="px-6 pb-6 bg-blue-50/50 hidden">
+        <a id="emailReceiptLink" href="#" target="_blank" class="w-full bg-[#f3f4fa] text-[#4f46e5] border border-[#e0e7ff] font-bold py-3 rounded-xl hover:bg-[#e0e7ff] transition flex justify-center items-center gap-2 text-sm shadow-sm">
+          📧 View Email Receipt
+        </a>
+      </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/axios.min.js"></script>
-  <script src="js/api.js"></script>
+  <script src="js/api.js?v=3"></script>
   <script src="js/chatbot.js"></script>
-  <script src="js/student.js"></script>
+  <script src="js/student.js?v=3"></script>
 </body>
 </html>

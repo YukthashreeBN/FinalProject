@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   requireAuth('student');
   loadUserInfo();
   initSidebar();
+  initCart();
   initSection('overview');
   loadSection('overview');
 });
@@ -71,7 +72,7 @@ function initSection(name) {
   const el = document.getElementById(`section-${name}`);
   if (el) el.classList.remove('hidden');
   const pageTitle = document.getElementById('pageTitle');
-  const titles = { overview: 'Overview', classes: 'My Classes', videos: 'Watch Videos', notes: 'Download Notes', quiz: 'Take Quiz', doubt: 'Ask Doubt (AI)', books: 'Book Request' };
+  const titles = { overview: 'Overview', classes: 'Courses', videos: 'Watch Videos', notes: 'Download Notes', quiz: 'Take Quiz', doubt: 'Ask Doubt (AI)', books: 'Book Request', cart: 'Your Cart', orders: 'Order History', 'my-courses': 'My Courses', 'course-player': 'Course Player' };
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 }
 
@@ -83,6 +84,9 @@ async function loadSection(name) {
     notes:   loadNotes,
     quiz:    loadQuizzes,
     books:   loadBooks,
+    cart:    loadCart,
+    orders:  loadOrders,
+    'my-courses': loadMyCourses,
   };
   if (loaders[name]) await loaders[name]();
 }
@@ -97,7 +101,15 @@ async function loadClasses() {
     const courses = Array.isArray(res.data) ? res.data : (res.data.classes || []);
     if (!courses.length) { grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-8">No classes found.</div>'; return; }
     const colors = ['bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-green-100 text-green-600', 'bg-yellow-100 text-yellow-600'];
-    grid.innerHTML = courses.map((c, i) => `
+    const cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
+    grid.innerHTML = courses.map((c, i) => {
+      const inCart = cart.some(item => item.id === (c._id || c.id));
+      const btnClass = inCart 
+        ? "bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold" 
+        : "bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition";
+      const btnText = inCart ? "Added to Cart" : "Add to Cart";
+      
+      return `
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between mb-4">
           <div class="w-11 h-11 ${colors[i % colors.length]} rounded-xl flex items-center justify-center font-bold text-lg">${(c.title || c.name || '?').charAt(0)}</div>
@@ -107,10 +119,11 @@ async function loadClasses() {
         <p class="text-xs text-gray-400 mb-3">👤 ${c.createdBy ? (c.createdBy.name || 'Teacher') : 'Teacher'}</p>
         <div class="text-xs text-gray-500 mb-3">${c.description || ''}</div>
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-400">${(c.enrolledStudents || []).length} enrolled</span>
-          <button class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition" onclick="enrollCourse('${c._id || c.id}')">Join</button>
+          <span class="text-xs text-gray-400 font-bold">₹499</span>
+          <button class="${btnClass}" onclick="addToCart('${c._id || c.id}', '${(c.title || c.name || '').replace(/'/g, "\\'")}', 499, this)">${btnText}</button>
         </div>
-      </div>`).join('');
+      </div>`
+    }).join('');
   } catch { grid.innerHTML = '<div class="col-span-3 text-center text-red-400 py-8">Failed to load classes.</div>'; }
 }
 
@@ -122,6 +135,141 @@ async function enrollCourse(courseId) {
     loadClasses();
   } catch (err) {
     showToast(err?.response?.data?.error || 'Failed to enroll.', 'error');
+  }
+}
+
+// ─── My Courses ──────────────────────────────
+async function loadMyCourses() {
+  const grid = document.getElementById('myCoursesGrid');
+  if (!grid) return;
+  
+  grid.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-8">Checking your enrollments...</div>';
+  
+  try {
+    const res = await StudentAPI.getEnrolledCourses();
+    const courses = Array.isArray(res.data) ? res.data : (res.data.courses || []);
+    
+    if (!courses.length) {
+      grid.innerHTML = `
+        <div class="col-span-3 text-center py-12 bg-white rounded-3xl border border-dashed border-gray-200">
+          <div class="text-5xl mb-4">🎓</div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">No courses yet</h3>
+          <p class="text-gray-500 mb-6">Enroll in a course from the catalog to start learning.</p>
+          <button onclick="initSection('classes'); loadSection('classes');" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition">Browse Catalog</button>
+        </div>`;
+      return;
+    }
+
+    const colors = ['bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-green-100 text-green-600', 'bg-orange-100 text-orange-600'];
+    
+    grid.innerHTML = courses.map((c, i) => `
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 hover:shadow-xl hover:-translate-y-1 transition duration-300">
+        <div class="w-14 h-14 ${colors[i % colors.length]} rounded-2xl flex items-center justify-center font-black text-2xl mb-5 shadow-inner">
+          ${(c.title || 'C').charAt(0)}
+        </div>
+        <h3 class="font-bold text-gray-900 text-lg mb-2 line-clamp-1">${c.title}</h3>
+        <p class="text-xs text-gray-400 mb-6 flex items-center gap-2">
+          <span class="w-2 h-2 bg-green-500 rounded-full"></span> 
+          Active Enrollment
+        </p>
+        <button onclick="openCoursePlayer('${c._id || c.id}', '${(c.title || '').replace(/'/g, "\\'")}')" class="w-full bg-gray-900 text-white font-bold py-3 rounded-2xl hover:bg-blue-600 transition flex items-center justify-center gap-2">
+          Study Now
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    grid.innerHTML = '<div class="col-span-3 text-center text-red-500 py-8">Failed to load courses.</div>';
+  }
+}
+
+// ─── Course Player ────────────────────────────
+let currentCourseVideos = [];
+
+async function openCoursePlayer(courseId, courseTitle) {
+  initSection('course-player');
+  const playlist = document.getElementById('coursePlaylist');
+  const titleEl = document.getElementById('currentPlayerCourseTitle');
+  const countEl = document.getElementById('playlistCount');
+  
+  if (titleEl) titleEl.textContent = courseTitle;
+  if (playlist) playlist.innerHTML = '<div class="p-6 text-center text-gray-400">Loading playlist...</div>';
+  
+  // Reset player UI
+  document.getElementById('videoPlaceholder').classList.remove('hidden');
+  document.getElementById('courseVideoPlayer').pause();
+  document.getElementById('courseVideoPlayer').src = '';
+  document.getElementById('currentVideoTitle').textContent = 'Select a Module';
+  document.getElementById('currentVideoDesc').textContent = 'Choose a video from the playlist to start learning.';
+
+  try {
+    const res = await StudentAPI.getCourseVideos(courseId);
+    currentCourseVideos = Array.isArray(res.data) ? res.data : (res.data.videos || []);
+    
+    if (countEl) countEl.textContent = `${currentCourseVideos.length} LESSONS`;
+    
+    if (!currentCourseVideos.length) {
+      playlist.innerHTML = '<div class="p-8 text-center text-gray-400"><div class="text-3xl mb-2">📭</div><div class="text-sm font-bold">No videos yet</div><p class="text-[10px] mt-1">Check back later for updates.</p></div>';
+      return;
+    }
+
+    playlist.innerHTML = currentCourseVideos.map((v, i) => `
+      <div class="playlist-item group p-4 hover:bg-blue-50 cursor-pointer transition flex gap-3 items-center" data-index="${i}">
+        <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 font-bold text-xs group-hover:bg-blue-100 group-hover:text-blue-600 transition">
+          ${String(i + 1).padStart(2, '0')}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-bold text-gray-900 truncate group-hover:text-blue-700 transition">${v.title}</div>
+          <div class="text-[10px] text-gray-400 font-medium">Video • placeholder duration</div>
+        </div>
+        <div class="opacity-0 group-hover:opacity-100 transition text-blue-600">
+           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+        </div>
+      </div>
+    `).join('');
+
+    // Attach playlist clicks
+    document.querySelectorAll('.playlist-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const idx = item.dataset.index;
+        playVideoAtIndex(idx);
+        
+        // UI highlight
+        document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-600'));
+        item.classList.add('bg-blue-50', 'border-l-4', 'border-blue-600');
+      });
+    });
+
+  } catch (error) {
+    playlist.innerHTML = '<div class="p-6 text-center text-red-400 text-xs font-bold">Failed to load playlist.</div>';
+  }
+}
+
+function playVideoAtIndex(index) {
+  const video = currentCourseVideos[index];
+  if (!video) return;
+
+  const player = document.getElementById('courseVideoPlayer');
+  const placeholder = document.getElementById('videoPlaceholder');
+  const title = document.getElementById('currentVideoTitle');
+  const desc = document.getElementById('currentVideoDesc');
+
+  placeholder.classList.add('hidden');
+  title.textContent = video.title;
+  desc.textContent = video.description || 'No description available for this lesson.';
+
+  const fileUrl = video.filePath ? `http://localhost:5000/${video.filePath.replace(/\\/g, '/')}` : '';
+  if (fileUrl) {
+    player.src = fileUrl;
+    player.play();
+  } else {
+    // Show placeholder for missing video file (common in demo)
+    player.pause();
+    player.src = '';
+    placeholder.classList.remove('hidden');
+    placeholder.querySelector('h3').textContent = "Video File Missing";
+    placeholder.querySelector('p').textContent = "This is a placeholder for a real video file. Once YouTube API is integrated, it will appear here.";
   }
 }
 
@@ -317,6 +465,51 @@ function startQuiz(quiz) {
   renderQuestion();
 }
 
+// ─── Order History ────────────────────────────
+async function loadOrders() {
+  const container = document.getElementById('ordersContainer');
+  if (!container) return;
+  
+  container.innerHTML = '<div class="text-center text-gray-400 py-8">Loading order history...</div>';
+  
+  try {
+    const res = await PaymentAPI.getOrders();
+    const orders = res.data.orders || [];
+    
+    if (orders.length === 0) {
+      container.innerHTML = '<div class="text-center text-gray-500 py-12"><div class="text-4xl mb-3">📦</div><h3 class="text-xl font-bold text-gray-900 mb-2">No orders yet</h3><p class="text-sm">You haven\'t purchased any courses yet.</p></div>';
+      return;
+    }
+    
+    container.innerHTML = orders.map(order => {
+      const dateStr = new Date(order.createdAt).toLocaleDateString();
+      const statusColor = order.status === 'success' ? 'bg-green-100 text-green-700' : (order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
+      const statusIcon = order.status === 'success' ? '✅' : (order.status === 'pending' ? '⏳' : '❌');
+      
+      return `
+        <div class="border border-gray-100 rounded-xl p-5 hover:border-blue-100 hover:shadow-md transition bg-gray-50/50">
+          <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <div>
+              <div class="text-xs text-gray-400 mb-1 font-mono">ID: ${order.orderId}</div>
+              <h3 class="font-bold text-lg text-gray-900">${order.courseName}</h3>
+              <p class="text-sm text-gray-500 mt-1">Date: ${dateStr}</p>
+            </div>
+            <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 md:gap-1">
+              <div class="font-black text-xl text-blue-600">₹${order.amount}</div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor}">${statusIcon} ${order.status.toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error loading orders:', error);
+    container.innerHTML = '<div class="text-center text-red-500 py-8 bg-red-50 rounded-xl border border-red-100">Failed to load order history. Please try again.</div>';
+  }
+}
+
+
 // ─── Books ────────────────────────────────────
 async function loadBooks() {
   const list = document.getElementById('recommendedBooksList');
@@ -381,6 +574,219 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ─── Cart & Checkout (Razorpay) ────────────────
+function initCart() {
+  const toggleBtn = document.querySelector('.cart-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      initSection('cart');
+      loadCart();
+    });
+  }
+
+  const checkoutBtn = document.getElementById('checkoutBtn');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', checkoutCart);
+  }
+  
+  updateCartBadge();
+}
+
+function updateCartBadge() {
+  const cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
+  const badge = document.getElementById('cartBadge');
+  if (badge) {
+    badge.textContent = cart.length;
+    badge.style.display = cart.length > 0 ? 'flex' : 'none';
+  }
+}
+
+function addToCart(courseId, title, price, btnElement = null) {
+  let cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
+  if (cart.find(item => item.id === courseId)) {
+    showToast('Course already in cart.', 'info');
+    return;
+  }
+  cart.push({ id: courseId, title, price });
+  localStorage.setItem('ll_cart', JSON.stringify(cart));
+  updateCartBadge();
+  showToast(title + ' added to cart! 🛒', 'success');
+  
+  if (btnElement) {
+    btnElement.textContent = "Added to Cart";
+    btnElement.className = "bg-green-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold";
+  }
+}
+
+function removeFromCart(courseId) {
+  let cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
+  cart = cart.filter(item => item.id !== courseId);
+  localStorage.setItem('ll_cart', JSON.stringify(cart));
+  updateCartBadge();
+  loadCart(); // Refresh UI if open
+  
+  // Refresh classes view if it is open, so buttons switch back to blue
+  const classesSection = document.getElementById('section-classes');
+  if (classesSection && !classesSection.classList.contains('hidden')) {
+    loadClasses();
+  }
+}
+
+function loadCart() {
+  const container = document.getElementById('cartItemsContainer');
+  const subtotalEl = document.getElementById('cartSubtotal');
+  const totalEl = document.getElementById('cartTotal');
+  const checkoutBtn = document.getElementById('checkoutBtn');
+  
+  if (!container) return;
+  
+  const cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
+  
+  if (cart.length === 0) {
+    container.innerHTML = `<div class="p-8 text-center text-gray-500">Your cart is empty. <br/><button onclick="initSection('classes'); loadClasses();" class="mt-4 text-blue-600 font-semibold hover:underline">Browse Classes</button></div>`;
+    subtotalEl.textContent = '₹0';
+    totalEl.textContent = '₹0';
+    checkoutBtn.disabled = true;
+    checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    return;
+  }
+  
+  checkoutBtn.disabled = false;
+  checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  
+  let total = 0;
+  container.innerHTML = cart.map(item => {
+    total += item.price;
+    return `
+      <div class="flex items-center justify-between p-5 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-blue-100 text-blue-600 flex items-center justify-center rounded-xl text-xl font-bold">🛒</div>
+          <div>
+            <h4 class="font-semibold text-gray-900">${item.title}</h4>
+            <div class="text-sm text-gray-500 mt-1">Course Access</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="font-bold text-gray-900">₹${item.price}</span>
+          <button onclick="removeFromCart('${item.id}')" class="text-red-500 hover:text-red-700 bg-red-50 w-8 h-8 rounded-full flex items-center justify-center transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  subtotalEl.textContent = '₹' + total;
+  totalEl.textContent = '₹' + total;
+}
+
+async function checkoutCart() {
+  const cart = JSON.parse(localStorage.getItem('ll_cart')) || [];
+  if (cart.length === 0) return;
+
+  const btn = document.getElementById('checkoutBtn');
+  btn.innerHTML = 'Processing... <span class="animate-spin ml-2">⏳</span>';
+  btn.disabled = true;
+
+  try {
+    const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
+    const courseNames = cart.map(item => item.title).join(', ');
+    
+    // We can just use the first course id to satisfy backend requirement
+    const reqBody = {
+      courseId: cart[0].id,
+      courseName: courseNames.length > 50 ? courseNames.substring(0, 47) + '...' : courseNames,
+      amount: totalAmount,
+      paymentMethod: 'razorpay'
+    };
+
+    // Calling the unified API
+    const res = await api.post('/payment/create-order', reqBody);
+    const orderData = res.data;
+
+    // Simulated Checkout Flow (Test Mode)
+    const simModal = document.getElementById('simulatedPaymentModal');
+    const rzpLoader = document.getElementById('razorpayLoader');
+    if (simModal) {
+      if (rzpLoader) {
+        rzpLoader.classList.remove('hidden');
+        setTimeout(() => rzpLoader.classList.remove('opacity-0'), 10);
+      }
+      
+      document.getElementById('simulatedAmountDisplay').textContent = '₹' + totalAmount;
+      
+      setTimeout(() => {
+        if (rzpLoader) {
+          rzpLoader.classList.add('opacity-0');
+          setTimeout(() => rzpLoader.classList.add('hidden'), 300);
+        }
+        simModal.classList.remove('hidden');
+      }, 1500);
+
+      const succBtn = document.getElementById('simulatedPaySuccessBtn');
+      const failBtn = document.getElementById('simulatedPayFailBtn');
+      const cancelBtn = document.getElementById('closeSimulatedModalBtn');
+
+      // Clear previous event listeners for a clean state
+      const newSuccBtn = succBtn.cloneNode(true);
+      const newFailBtn = failBtn.cloneNode(true);
+      const newCancelBtn = cancelBtn.cloneNode(true);
+      succBtn.replaceWith(newSuccBtn);
+      failBtn.replaceWith(newFailBtn);
+      cancelBtn.replaceWith(newCancelBtn);
+
+      newSuccBtn.onclick = async () => {
+        newSuccBtn.innerHTML = 'Processing...';
+        newSuccBtn.disabled = true;
+        
+        try {
+          const simulatedPaymentId = 'pay_sim_' + Math.random().toString(36).substr(2, 9);
+          const verifyRes = await api.post('/payment/verify-payment', {
+            orderId: orderData.orderId,
+            razorpay_payment_id: simulatedPaymentId,
+            razorpay_signature: 'mock_signature'
+          });
+          
+          if (verifyRes.data.success) {
+            simModal.classList.add('hidden');
+            showToast('Payment verified! Generating bill...', 'success');
+            
+            const currentItems = [...JSON.parse(localStorage.getItem('ll_cart')) || []];
+            localStorage.removeItem('ll_cart');
+            updateCartBadge();
+            
+            showBillModal(simulatedPaymentId, totalAmount, currentItems, verifyRes.data.previewUrl);
+          } else {
+            showToast('Verification failed: ' + verifyRes.data.message, 'error');
+          }
+        } catch (verErr) {
+          showToast('Payment verification error', 'error');
+        } finally {
+          newSuccBtn.innerHTML = '✅ Simulate Success';
+          newSuccBtn.disabled = false;
+        }
+      };
+
+      newFailBtn.onclick = () => {
+        simModal.classList.add('hidden');
+        showToast('Payment Failed (Simulated)', 'error');
+      };
+
+      newCancelBtn.onclick = () => {
+        simModal.classList.add('hidden');
+      };
+    }
+
+  } catch (error) {
+    console.error("Checkout issue:", error);
+    showToast(error?.response?.data?.error || 'Failed to initiate checkout', 'error');
+  } finally {
+    btn.innerHTML = 'Checkout securely <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+    btn.disabled = false;
+  }
+}
+
 // ─── Toast ────────────────────────────────────
 function showToast(msg, type = 'info') {
   const el = document.createElement('div');
@@ -388,4 +794,52 @@ function showToast(msg, type = 'info') {
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
+}
+
+// ─── Bill/Receipt Modal ────────────────────────
+function showBillModal(txnId, total, items, previewUrl = null) {
+  const modal = document.getElementById('billModal');
+  const itemsList = document.getElementById('billItemsList');
+  if (!modal || !itemsList) return;
+
+  document.getElementById('billTxnId').textContent = txnId;
+  document.getElementById('billTotalAmount').textContent = '₹' + total.toLocaleString();
+
+  itemsList.innerHTML = '';
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'flex justify-between items-start';
+    el.innerHTML = `
+      <div class="flex-1">
+        <div class="font-bold text-gray-800">${item.title}</div>
+      </div>
+      <div class="font-bold text-gray-900 ml-4">₹${item.price}</div>
+    `;
+    itemsList.appendChild(el);
+  });
+
+  const emailResContainer = document.getElementById('emailReceiptContainer');
+  const emailResLink = document.getElementById('emailReceiptLink');
+  if (emailResContainer && emailResLink) {
+    if (previewUrl) {
+      emailResLink.href = previewUrl;
+      emailResContainer.classList.remove('hidden');
+    } else {
+      emailResContainer.classList.add('hidden');
+    }
+  }
+
+  const closeBtn = document.getElementById('closeBillBtn');
+  if (closeBtn) {
+    // Clone to remove old instances
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.replaceWith(newCloseBtn);
+    newCloseBtn.onclick = () => {
+      modal.classList.add('hidden');
+      initSection('overview');
+      loadSection('overview');
+    };
+  }
+
+  modal.classList.remove('hidden');
 }

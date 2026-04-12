@@ -1,15 +1,45 @@
 const nodemailer = require("nodemailer");
 
-// Create reusable transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: false,  // true for 465, false for 587
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+let transporter;
+let testAccount;
+
+async function getTransporter() {
+    if (transporter) return transporter;
+
+    const hasRealCreds = process.env.SMTP_USER && 
+                         !process.env.SMTP_USER.includes('your-email') && 
+                         process.env.SMTP_PASS && 
+                         !process.env.SMTP_PASS.includes('xxxx');
+
+    if (hasRealCreds) {
+        transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || "smtp.gmail.com",
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: Number(process.env.SMTP_PORT) === 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
+        console.log("Live SMTP Mailer initialized.");
+    } else {
+        console.log("No valid SMTP credentials found in .env. Generating Ethereal test account...");
+        if (!testAccount) {
+            testAccount = await nodemailer.createTestAccount();
+        }
+        transporter = nodemailer.createTransport({
+            host: testAccount.smtp.host,
+            port: testAccount.smtp.port,
+            secure: testAccount.smtp.secure,
+            auth: {
+                user: testAccount.user,
+                pass: testAccount.pass,
+            },
+        });
+        console.log(`Ethereal Test account ready. User: ${testAccount.user}`);
+    }
+    return transporter;
+}
 
 /**
  * Send a payment receipt email.
@@ -72,7 +102,8 @@ async function sendPaymentReceipt(options) {
         </div>
     </div>`;
 
-    const info = await transporter.sendMail({
+    const tp = await getTransporter();
+    const info = await tp.sendMail({
         from: process.env.EMAIL_FROM || '"LiveLearn Plus" <noreply@livelearnplus.com>',
         to,
         subject: `✅ Payment Receipt — ${courseName} | LiveLearn Plus`,
@@ -80,6 +111,14 @@ async function sendPaymentReceipt(options) {
     });
 
     console.log("Receipt email sent:", info.messageId);
+    
+    // Log preview URL if using Ethereal
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+       console.log("📧 VIEW RECEIPT EMAIL HERE: " + previewUrl);
+       info.previewUrl = previewUrl;
+    }
+    
     return info;
 }
 

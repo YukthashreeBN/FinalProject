@@ -129,4 +129,14 @@ router.post("/:id/enroll", authMiddleware, async (req, res) => {
   }
 });
 
+// Get courses where user is enrolled
+router.get("/enrolled", authMiddleware, async (req, res) => {
+  try {
+    const courses = await Course.find({ enrolledStudents: req.user.id }).populate("createdBy", "name");
+    res.status(200).json(courses);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch enrolled courses" });
+  }
+});
+
 module.exports = router;

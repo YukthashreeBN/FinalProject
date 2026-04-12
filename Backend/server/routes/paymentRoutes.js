@@ -85,11 +85,24 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
         order.transactionId = transactionId;
         await order.save();
 
+        // ── ENROLL STUDENT IN COURSE ──
+        if (order.courseId) {
+            try {
+                const Course = require("../models/Course");
+                await Course.findByIdAndUpdate(order.courseId, {
+                    $addToSet: { enrolledStudents: req.user.id }
+                });
+            } catch (enrollErr) {
+                console.error("Non-fatal enrollment error:", enrollErr.message);
+            }
+        }
+
         // ── SEND EMAIL RECEIPT ──
+        let previewUrl = null;
         try {
             const user = await User.findById(req.user.id);
             if (user && user.email) {
-                await sendPaymentReceipt({
+                const info = await sendPaymentReceipt({
                     to: user.email,
                     userName: user.name,
                     courseName: order.courseName,
@@ -101,6 +114,7 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
                         year: "numeric", month: "long", day: "numeric"
                     }),
                 });
+                if (info && info.previewUrl) previewUrl = info.previewUrl;
                 order.emailSent = true;
                 await order.save();
             }
@@ -112,11 +126,23 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
             success: true,
             message: "Payment verified successfully.",
             transactionId: order.transactionId,
+            previewUrl: previewUrl,
         });
 
     } catch (error) {
         console.error("Verify payment error:", error.message);
-        res.status(500).json({ error: "Failed to verify payment." });
+        res.status(500).json({ success: false, message: "Verification failed." });
+    }
+});
+
+// GET /api/payment/orders
+router.get("/orders", authMiddleware, async (req, res) => {
+    try {
+        const orders = await Order.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        res.status(200).json({ success: true, orders });
+    } catch (error) {
+        console.error("Fetch orders error:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch orders." });
     }
 });
 

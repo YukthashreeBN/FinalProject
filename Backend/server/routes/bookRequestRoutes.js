@@ -5,14 +5,27 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 router.post("/", authMiddleware, async (req, res) => {
     try {
-        const { bookName } = req.body;
+        const { bookName, subject, reason } = req.body;
         const request = await BookRequest.create({
             bookName,
+            subject,
+            reason,
             studentId: req.user.id,
         });
         res.status(201).json(request);
     } catch (err) {
         res.status(500).json({ error: "Failed to submit book request." });
+    }
+});
+
+// GET /api/book-requests/my - Fetch requests for the logged-in student
+router.get("/my", authMiddleware, async (req, res) => {
+    try {
+        const requests = await BookRequest.find({ studentId: req.user.id })
+            .sort({ createdAt: -1 });
+        res.status(200).json(requests);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch your book requests." });
     }
 });
 

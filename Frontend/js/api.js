@@ -78,8 +78,9 @@ const StudentAPI = {
   getNotes:            () => api ? api.get('/notes')                 : simulateNotes(),
   getQuizzes:          () => api ? api.get('/quizzes')               : simulateQuizzes(),
   submitQuiz:          (id, answers) => api ? api.post(`/quizzes/${id}/submit`, { answers }) : simulateQuizSubmit(answers),
-  requestBook:         (data) => api ? api.post('/book-requests', { bookName: data.title || data.bookName }) : simulateSuccess('Book request submitted!'),
-  getRecommendedBooks: () => simulateBooks(), // No real endpoint – use simulation
+  requestBook:         (data) => api ? api.post('/book-requests', { bookName: data.title || data.bookName, subject: data.subject, reason: data.reason }) : simulateSuccess('Book request submitted!'),
+  getMyBookRequests:   () => api ? api.get('/book-requests/my') : simulateMyBookRequests(),
+  getRecommendedBooks: () => api ? api.get('/book-recommendations') : simulateBooks(),
   getNotifications:    () => api ? api.get('/notifications')        : simulateNotifications(),
   markNotifRead:       (id) => api ? api.put(`/notifications/${id}/read`) : simulateMarkRead(id),
   markAllNotifRead:    () => api ? api.put('/notifications/read-all') : simulateMarkAllRead(),
@@ -94,13 +95,15 @@ const StudentAPI = {
 //   GET  /api/doubts           → get all doubts
 //   PUT  /api/doubts/:id/reply → reply to a doubt
 const TeacherAPI = {
-  createClass:   (data)     => api ? api.post('/courses/create', { title: data.name, description: data.description || data.subject }) : simulateSuccess('Class created!'),
+  createCourse:  (data)     => api ? api.post('/courses/create', { title: data.name, description: data.description || data.subject }) : simulateSuccess('Course created!'),
   uploadNotes:   (formData) => api ? api.post('/notes/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }) : simulateSuccess('Notes uploaded!'),
   uploadVideo:   (data)     => api ? api.post('/videos/upload', data, { headers: { 'Content-Type': 'multipart/form-data' } }) : simulateSuccess('Video uploaded!'),
   createQuiz:    (data)     => api ? api.post('/quizzes/create', data)          : simulateSuccess('Quiz created!'),
   getDoubts:     ()         => api ? api.get('/doubts')                         : simulateDoubts(),
   answerDoubt:   (id, ans)  => api ? api.put(`/doubts/${id}/reply`, { reply: ans }) : simulateSuccess('Answer submitted!'),
-  recommendBook: (data)     => simulateSuccess('Book recommended!'), // No real endpoint – use simulation
+  recommendBook: (data)     => api ? api.post('/book-recommendations', data) : simulateSuccess('Book recommended!'),
+  getBookRequests: ()       => api ? api.get('/book-requests') : simulateBookRequests(),
+  updateBookRequest: (id, status) => api ? api.put(`/book-requests/${id}`, { status }) : simulateSuccess('Request updated!'),
 };
 
 // ─────────────── CHATBOT ───────────────
@@ -281,6 +284,14 @@ async function simulateBooks() {
     { title: 'Concepts of Physics', author: 'H.C. Verma', subject: 'Physics' },
     { title: 'Organic Chemistry', author: 'Morrison & Boyd', subject: 'Chemistry' },
   ] } };
+}
+
+async function simulateMyBookRequests() {
+  await simulateDelay(500);
+  return { data: [
+    { _id: 'r1', bookName: 'Physics Vol 1', status: 'fulfilled', createdAt: new Date().toISOString() },
+    { _id: 'r2', bookName: 'Calc II', status: 'pending', createdAt: new Date().toISOString() }
+  ] };
 }
 
 async function simulateDoubts() {

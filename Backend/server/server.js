@@ -16,6 +16,7 @@ const placeholderRoutes = require("./routes/placeholderRoutes");
 const chatbotRoutes = require("./routes/chatbotRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const bookRecommendationRoutes = require("./routes/bookRecommendationRoutes");
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/book-recommendations", bookRecommendationRoutes);
 app.use("/api", placeholderRoutes);
 
 app.get("/", (req, res) => {

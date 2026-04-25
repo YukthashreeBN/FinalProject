@@ -72,31 +72,30 @@ function activateSection(name) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   const el = document.getElementById(`section-${name}`);
   if (el) el.classList.remove('hidden');
-  const titles = { overview: 'Teacher Dashboard', 'create-class': 'Create Class', 'upload-notes': 'Upload Notes', 'upload-video': 'Upload Video', 'create-quiz': 'Create Quiz', 'view-doubts': 'Student Doubts', 'recommend-books': 'Recommend Books' };
+  const titles = { overview: 'Teacher Dashboard', 'create-class': 'Create Course', 'upload-notes': 'Upload Notes', 'create-quiz': 'Create Quiz', 'view-doubts': 'Student Doubts', 'recommend-books': 'Recommend Books', 'book-requests': 'Book Requests' };
   const pageTitle = document.getElementById('pageTitle');
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 
-  const loaders = { 'view-doubts': loadDoubts };
+  const loaders = { 'view-doubts': loadDoubts, 'book-requests': loadBookRequests };
   if (loaders[name]) loaders[name]();
   initSectionForms(name);
 }
 
 function initSectionForms(name) {
-  if (name === 'create-class')    initCreateClassForm();
+  if (name === 'create-class')    initCreateCourseForm();
   if (name === 'upload-notes')    initUploadNotesForm();
-  if (name === 'upload-video')    initUploadVideoForm();
   if (name === 'create-quiz')     initCreateQuizForm();
   if (name === 'recommend-books') initRecommendBooksForm();
 }
 
-// ─── Create Class ─────────────────────────────
-function initCreateClassForm() {
+// ─── Create Course ─────────────────────────────
+function initCreateCourseForm() {
   const form = document.getElementById('createClassForm');
   if (!form || form.dataset.init) return;
   form.dataset.init = '1';
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = {
+    const courseData = {
       name: document.getElementById('className').value,
       subject: document.getElementById('classSubject').value,
       description: document.getElementById('classDesc').value,
@@ -104,12 +103,38 @@ function initCreateClassForm() {
       maxStudents: document.getElementById('classMax').value,
       type: document.getElementById('classType').value,
     };
-    if (!data.name || !data.subject) { showToast('Please fill required fields.', 'error'); return; }
+    if (!courseData.name || !courseData.subject) { showToast('Please fill required course fields.', 'error'); return; }
+    
     try {
-      await TeacherAPI.createClass(data);
-      showToast('Class created successfully! ✅', 'success');
+      const res = await TeacherAPI.createCourse(courseData);
+      const courseId = res.data?._id;
+      showToast('Course created successfully! ✅', 'success');
+
+      // Handle optional video upload
+      const videoTitle = document.getElementById('videoTitle').value;
+      const videoUrl   = document.getElementById('videoUrl').value;
+      const videoFile  = document.getElementById('videoFile').files[0];
+
+      if (videoTitle && (videoUrl || videoFile)) {
+        showToast('Uploading course video...', 'info');
+        const formData = new FormData();
+        formData.append('title', videoTitle);
+        formData.append('description', document.getElementById('videoDesc').value);
+        formData.append('courseId', courseId);
+        if (videoFile) {
+          formData.append('video', videoFile);
+        } else {
+          formData.append('url', videoUrl);
+        }
+        await TeacherAPI.uploadVideo(formData);
+        showToast('Intro video attached! 🎥', 'success');
+      }
+
       form.reset();
-    } catch { showToast('Failed to create class.', 'error'); }
+    } catch (err) { 
+      console.error(err);
+      showToast('Failed to complete course creation.', 'error'); 
+    }
   });
 }
 
@@ -166,26 +191,7 @@ function initUploadNotesForm() {
   }
 }
 
-// ─── Upload Video ─────────────────────────────
-function initUploadVideoForm() {
-  const form = document.getElementById('uploadVideoForm');
-  if (!form || form.dataset.init) return;
-  form.dataset.init = '1';
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-      title: document.getElementById('videoTitle').value,
-      description: document.getElementById('videoDesc').value,
-      url: document.getElementById('videoUrl').value,
-    };
-    if (!data.title) { showToast('Please enter a title.', 'error'); return; }
-    try {
-      await TeacherAPI.uploadVideo(data);
-      showToast('Video uploaded! ✅', 'success');
-      form.reset();
-    } catch { showToast('Upload failed.', 'error'); }
-  });
-}
+
 
 // ─── Create Quiz ──────────────────────────────
 function initCreateQuizForm() {
@@ -308,6 +314,51 @@ function initRecommendBooksForm() {
       form.reset();
     } catch { showToast('Failed to recommend book.', 'error'); }
   });
+}
+
+// ─── Book Requests (Student -> Teacher) ─────────
+async function loadBookRequests() {
+  const tbody = document.getElementById('bookRequestsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400 text-sm">Loading requests...</td></tr>';
+  try {
+    const res = await TeacherAPI.getBookRequests();
+    const requests = res.data || [];
+    if (!requests.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-400 text-sm">No book requests from students.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = requests.map(r => {
+      const studentName = r.studentId ? (r.studentId.name || 'Unknown') : 'Unknown';
+      const statusClass = r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                         r.status === 'fulfilled' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+      return `
+        <tr class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition">
+          <td class="px-6 py-4 text-sm font-medium text-gray-800">${r.bookName}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">${studentName}</td>
+          <td class="px-6 py-4 text-xs text-gray-500">${r.subject || 'N/A'}</td>
+          <td class="px-6 py-4 text-xs text-gray-500 max-w-xs truncate" title="${r.reason || ''}">${r.reason || 'N/A'}</td>
+          <td class="px-6 py-4 text-right space-x-2">
+            ${r.status === 'pending' ? `
+              <button class="status-btn text-xs font-bold text-green-600 hover:text-green-800" data-id="${r._id}" data-status="fulfilled">Fulfill</button>
+              <button class="status-btn text-xs font-bold text-red-600 hover:text-red-800" data-id="${r._id}" data-status="cancelled">Cancel</button>
+            ` : `<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${statusClass}">${r.status}</span>`}
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const status = btn.dataset.status;
+        try {
+          await TeacherAPI.updateBookRequest(id, status);
+          showToast(`Request ${status}!`, 'success');
+          loadBookRequests();
+        } catch { showToast('Update failed.', 'error'); }
+      });
+    });
+  } catch { tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-red-400 text-sm">Error loading requests.</td></tr>'; }
 }
 
 function showToast(msg, type = 'info') {

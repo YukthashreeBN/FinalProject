@@ -625,30 +625,73 @@ async function loadBooks() {
   if (!list) return;
   try {
     const res   = await StudentAPI.getRecommendedBooks();
-    const books = res.data.books || [];
-    list.innerHTML = books.map(b => `
-      <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-        <span class="text-2xl">📚</span>
-        <div><div class="font-medium text-sm text-gray-900">${b.title}</div><div class="text-xs text-gray-500">${b.author} • ${b.subject}</div></div>
-      </div>`).join('');
-  } catch { list.innerHTML = '<p class="text-sm text-gray-400">Failed to load books.</p>'; }
+    // Backend returns array of recommendations directly
+    const books = Array.isArray(res.data) ? res.data : (res.data.books || []);
+    if (!books.length) {
+      list.innerHTML = '<p class="text-xs text-gray-400">No recommendations from teachers yet.</p>';
+    } else {
+      list.innerHTML = books.map(b => `
+        <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+          <span class="text-2xl">📚</span>
+          <div>
+            <div class="font-bold text-[13px] text-gray-900 leading-tight">${b.title}</div>
+            <div class="text-[11px] text-gray-500 mt-0.5">${b.author} • ${b.subject}</div>
+            <div class="text-[10px] text-blue-600 font-semibold mt-1">Recommended by ${b.recommendedBy ? b.recommendedBy.name : 'Teacher'}</div>
+          </div>
+        </div>`).join('');
+    }
+  } catch { list.innerHTML = '<p class="text-sm text-gray-400 font-medium">Failed to load recommended books.</p>'; }
+
+  loadMyBookRequests();
 
   // Book request form
   const form = document.getElementById('bookRequestForm');
-  form && form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-      title:   document.getElementById('bookTitle').value,
-      subject: document.getElementById('bookSubject').value,
-      reason:  document.getElementById('bookReason').value,
-    };
-    if (!data.title || !data.subject) { showToast('Please fill in all fields.', 'error'); return; }
-    try {
-      await StudentAPI.requestBook(data);
-      showToast('Book request submitted! ✅', 'success');
-      form.reset();
-    } catch { showToast('Failed to submit request.', 'error'); }
-  });
+  if (form && !form.dataset.init) {
+    form.dataset.init = '1';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        title:   document.getElementById('bookTitle').value,
+        subject: document.getElementById('bookSubject').value,
+        reason:  document.getElementById('bookReason').value,
+      };
+      if (!data.title || !data.subject) { showToast('Please fill in required fields.', 'error'); return; }
+      try {
+        await StudentAPI.requestBook(data);
+        showToast('Book request submitted! ✅', 'success');
+        form.reset();
+        loadMyBookRequests();
+      } catch { showToast('Failed to submit request.', 'error'); }
+    });
+  }
+}
+
+async function loadMyBookRequests() {
+  const list = document.getElementById('myBookRequestsList');
+  if (!list) return;
+  try {
+    const res = await StudentAPI.getMyBookRequests();
+    const requests = res.data || [];
+    if (!requests.length) {
+      list.innerHTML = '<p class="text-[11px] text-gray-400">You haven\'t requested any books yet.</p>';
+      return;
+    }
+    list.innerHTML = requests.map(r => {
+      const statusClass = r.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                         r.status === 'fulfilled' ? 'bg-green-100 text-green-700 border-green-200' : 
+                         'bg-red-100 text-red-700 border-red-200';
+      return `
+        <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-bold text-gray-900 truncate">${r.bookName}</div>
+            <div class="text-[10px] text-gray-400 mt-0.5">${new Date(r.createdAt).toLocaleDateString()}</div>
+          </div>
+          <span class="text-[9px] uppercase font-bold px-2 py-1 rounded-lg border ${statusClass}">${r.status}</span>
+        </div>`;
+    }).join('');
+  } catch {
+    list.innerHTML = '<p class="text-[11px] text-red-400">Failed to load your requests.</p>';
+  }
 }
 
 // ─── Doubt chat (inline) ─────────────────────

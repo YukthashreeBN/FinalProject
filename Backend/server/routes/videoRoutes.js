@@ -20,14 +20,15 @@ const upload = multer({ storage });
 
 router.post("/upload", authMiddleware, upload.single("video"), async (req, res) => {
     try {
-        const { title, description, courseId } = req.body;
+        const { title, description, courseId, url } = req.body;
         const video = await Video.create({
             title,
             description,
             courseId,
             uploadedBy: req.user.id,
-            filePath: req.file.path,
-            originalName: req.file.originalname,
+            filePath: req.file ? req.file.path : null,
+            originalName: req.file ? req.file.originalname : null,
+            videoUrl: url || null
         });
 
         // Trigger Notifications for enrolled students

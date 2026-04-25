@@ -6,8 +6,9 @@ const videoSchema = new mongoose.Schema(
         description: { type: String },
         courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
         uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-        filePath: { type: String, required: true },
-        originalName: { type: String, required: true },
+        filePath: { type: String },
+        originalName: { type: String },
+        videoUrl: { type: String },
     },
     { timestamps: true }
 );

@@ -8,6 +8,7 @@ router.post("/create", authMiddleware, async (req, res) => {
     const course = await Course.create({
       title: req.body.title,
       description: req.body.description,
+      youtubePlaylistId: req.body.youtubePlaylistId || "",
       createdBy: req.user.id,
     });
 
@@ -92,6 +93,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
     course.title = req.body.title || course.title;
     course.description = req.body.description || course.description;
+    course.youtubePlaylistId = req.body.youtubePlaylistId !== undefined ? req.body.youtubePlaylistId : course.youtubePlaylistId;
 
     await course.save();
 

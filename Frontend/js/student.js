@@ -167,7 +167,7 @@ function initSection(name) {
   const el = document.getElementById(`section-${name}`);
   if (el) el.classList.remove('hidden');
   const pageTitle = document.getElementById('pageTitle');
-  const titles = { overview: 'Overview', classes: 'Courses', videos: 'Watch Videos', notes: 'Resources', quiz: 'Take Quiz', doubt: 'Ask Doubt (AI)', books: 'Book Request', cart: 'Your Cart', orders: 'Order History', 'my-courses': 'My Courses', 'course-player': 'Course Player' };
+  const titles = { overview: 'Overview', classes: 'Courses', videos: 'Watch Videos', notes: 'Resources', quiz: 'Take Quiz', doubt: 'Ask Doubts', books: 'Book Request', cart: 'Your Cart', orders: 'Order History', 'my-courses': 'My Courses', 'course-player': 'Course Player' };
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 }
 
@@ -218,18 +218,20 @@ async function loadClasses() {
       const cardStyle = isEnrolled ? 'style="filter: grayscale(1); opacity: 0.8;"' : '';
       
       return `
-      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow relative" ${cardStyle}>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow relative cursor-pointer group" ${cardStyle} onclick="openCourseIntro('${courseId}', '${(c.title || c.name || '').replace(/'/g, "\\'")}', '${(c.description || '').replace(/'/g, "\\'")}', '${c.createdBy ? (c.createdBy.name || 'Teacher') : 'Teacher'}', '${c.youtubePlaylistId || ''}', ${isEnrolled}, ${inCart})">
         <div class="flex items-center justify-between mb-4">
           <div class="w-11 h-11 ${colors[i % colors.length]} rounded-xl flex items-center justify-center font-bold text-lg">${(c.title || c.name || '?').charAt(0)}</div>
           <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Free</span>
           ${isEnrolled ? '<span class="absolute top-4 right-4 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider">Owned</span>' : ''}
         </div>
-        <h3 class="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">${c.title || c.name}</h3>
+        <h3 class="font-semibold text-gray-900 text-sm mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">${c.title || c.name}</h3>
         <p class="text-xs text-gray-400 mb-3">👤 ${c.createdBy ? (c.createdBy.name || 'Teacher') : 'Teacher'}</p>
         <div class="text-xs text-gray-500 mb-3 line-clamp-2">${c.description || 'Quality education for future leaders.'}</div>
         <div class="flex items-center justify-between">
           <span class="text-xs text-gray-400 font-bold">₹499</span>
-          ${btnHtml}
+          <div onclick="event.stopPropagation()">
+            ${btnHtml}
+          </div>
         </div>
       </div>`
     }).join('');
@@ -246,6 +248,127 @@ async function enrollCourse(courseId) {
     showToast(err?.response?.data?.error || 'Failed to enroll.', 'error');
   }
 }
+
+// ─── Course Intro Modal ──────────────────────
+async function openCourseIntro(courseId, title, desc, teacher, youtubePlaylistId, isEnrolled, inCart) {
+  const modal = document.getElementById('courseIntroModal');
+  if (!modal) return;
+  
+  document.getElementById('introCourseTitle').textContent = title;
+  document.getElementById('introCourseTeacher').textContent = `By ${teacher}`;
+  document.getElementById('introCourseDesc').textContent = desc || 'Quality education for future leaders.';
+  
+  const actionContainer = document.getElementById('introCourseAction');
+  if (isEnrolled) {
+    actionContainer.innerHTML = `<button class="bg-gray-200 text-gray-500 text-sm px-6 py-2.5 rounded-xl font-bold cursor-default" disabled>Purchased</button>`;
+  } else if (inCart) {
+    actionContainer.innerHTML = `<button class="bg-green-500 text-white text-sm px-6 py-2.5 rounded-xl font-semibold cursor-default" onclick="initSection('cart'); loadSection('cart'); closeCourseIntro();">Go to Cart</button>`;
+  } else {
+    actionContainer.innerHTML = `<button class="bg-blue-600 text-white text-sm px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200" onclick="addToCart('${courseId}', '${title.replace(/'/g, "\\'")}', 499, this); event.stopPropagation(); closeCourseIntro();">Add to Cart</button>`;
+  }
+  
+  modal.classList.remove('hidden');
+  
+  const playlistContainer = document.getElementById('introCoursePlaylist');
+  const countBadge = document.getElementById('introCourseCount');
+  
+  playlistContainer.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm"><div class="animate-pulse flex items-center justify-center gap-2"><span>Loading curriculum...</span></div></div>';
+  countBadge.textContent = '...';
+  
+  try {
+    const res = await StudentAPI.getCourseVideos(courseId);
+    const videos = Array.isArray(res.data) ? res.data : (res.data.videos || []);
+    
+    let playlistHtml = '';
+    
+    if (youtubePlaylistId) {
+      const ytResult = parseYoutubeId(youtubePlaylistId);
+      if (ytResult) {
+        let embedSrc = '';
+        if (ytResult.type === 'playlist') {
+          embedSrc = `https://www.youtube.com/embed/videoseries?list=${ytResult.id}&controls=0&disablekb=1`;
+        } else {
+          embedSrc = `https://www.youtube.com/embed/${ytResult.id}?controls=0&disablekb=1`;
+        }
+        
+        playlistHtml += `
+          <div class="relative w-full aspect-video bg-black overflow-hidden group">
+            <!-- Unplayable Overlay -->
+            <div class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+              <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <div class="text-white text-sm font-bold tracking-wide uppercase">Enroll to Watch</div>
+            </div>
+            
+            <iframe class="absolute inset-0 w-full h-full pointer-events-none opacity-80" 
+                    src="${embedSrc}" 
+                    frameborder="0">
+            </iframe>
+          </div>
+          <div class="p-3 bg-blue-50 border-b border-blue-100 flex items-center gap-2 text-xs font-bold text-blue-800">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+            YouTube Playlist Preview
+          </div>
+        `;
+      }
+    }
+    
+    if (videos.length === 0 && !youtubePlaylistId) {
+      playlistHtml = '<div class="p-6 text-center text-gray-500 text-sm">Curriculum is being updated.</div>';
+      countBadge.textContent = '0 LESSONS';
+    } else if (videos.length > 0) {
+      countBadge.textContent = `${videos.length} LESSONS`;
+      playlistHtml += videos.map((v, i) => `
+        <div class="flex items-center gap-3 p-3 hover:bg-gray-50 transition opacity-70">
+          <div class="w-8 h-8 bg-gray-100 border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 font-bold text-xs">
+            ${String(i + 1).padStart(2, '0')}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-gray-800 truncate">${v.title}</div>
+            <div class="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+              <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Video Lesson
+            </div>
+          </div>
+          <div class="text-gray-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </div>
+        </div>
+      `).join('');
+    } else if (youtubePlaylistId && videos.length === 0) {
+       countBadge.textContent = 'PLAYLIST INCLUDED';
+    }
+    
+    playlistContainer.innerHTML = playlistHtml;
+    
+  } catch (err) {
+    playlistContainer.innerHTML = '<div class="p-6 text-center text-red-400 text-sm">Failed to load curriculum.</div>';
+    countBadge.textContent = 'ERROR';
+  }
+}
+
+function closeCourseIntro() {
+  document.getElementById('courseIntroModal')?.classList.add('hidden');
+}
+
+// Close modal on click outside and escape key
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('courseIntroModal');
+  const btn = document.getElementById('closeIntroModalBtn');
+  
+  if (btn && btn.contains(e.target)) {
+    closeCourseIntro();
+  }
+  
+  if (modal && e.target === modal) {
+    closeCourseIntro();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeCourseIntro();
+});
 
 // ─── My Courses ──────────────────────────────
 async function loadMyCourses() {
@@ -281,7 +404,7 @@ async function loadMyCourses() {
           <span class="w-2 h-2 bg-green-500 rounded-full"></span> 
           Active Enrollment
         </p>
-        <button onclick="openCoursePlayer('${c._id || c.id}', '${(c.title || '').replace(/'/g, "\\'")}')" class="w-full bg-gray-900 text-white font-bold py-3 rounded-2xl hover:bg-blue-600 transition flex items-center justify-center gap-2">
+        <button onclick="openCoursePlayer('${c._id || c.id}', '${(c.title || '').replace(/'/g, "\\'")}', '${c.youtubePlaylistId || ''}')" class="w-full bg-gray-900 text-white font-bold py-3 rounded-2xl hover:bg-blue-600 transition flex items-center justify-center gap-2">
           Study Now
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
@@ -293,10 +416,72 @@ async function loadMyCourses() {
   }
 }
 
+// ─── YouTube URL Converter ────────────────────
+function parseYoutubeId(input) {
+  if (!input || !input.trim()) return null;
+  input = input.trim();
+  try {
+    if (input.startsWith('http://') || input.startsWith('https://') || input.startsWith('www.')) {
+      const url = new URL(input.startsWith('www.') ? 'https://' + input : input);
+      const hostname = url.hostname.replace('www.', '');
+
+      if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+        const listId = url.searchParams.get('list');
+        const videoId = url.searchParams.get('v');
+        if (listId) return { id: listId, type: 'playlist' };
+        if (videoId) return { id: videoId, type: 'video' };
+        const embedMatch = url.pathname.match(/^\/embed\/(.+)/);
+        if (embedMatch) {
+          if (url.pathname.includes('videoseries')) {
+            return { id: url.searchParams.get('list'), type: 'playlist' };
+          }
+          return { id: embedMatch[1], type: 'video' };
+        }
+      }
+      if (hostname === 'youtu.be') {
+        const vid = url.pathname.slice(1);
+        const listId = url.searchParams.get('list');
+        if (listId) return { id: listId, type: 'playlist' };
+        if (vid) return { id: vid, type: 'video' };
+      }
+      return null;
+    }
+    if (/^(PL|OL|UU|FL|RD|LL)[A-Za-z0-9_-]{10,}$/.test(input)) return { id: input, type: 'playlist' };
+    if (/^[A-Za-z0-9_-]{11}$/.test(input)) return { id: input, type: 'video' };
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Global variables for YouTube API
+let ytPlayer = null;
+let ytIframeApiReady = false;
+let ytPlaylistRendered = false;
+let currentCourseIdForYt = null;
+
+// Inject YouTube API only if not already loaded
+if (window.YT && window.YT.Player) {
+  ytIframeApiReady = true;
+} else {
+  const ytApiScript = document.createElement('script');
+  ytApiScript.src = "https://www.youtube.com/iframe_api";
+  const firstScriptTag = document.getElementsByTagName('script')[0];
+  if (firstScriptTag) {
+      firstScriptTag.parentNode.insertBefore(ytApiScript, firstScriptTag);
+  } else {
+      document.head.appendChild(ytApiScript);
+  }
+
+  window.onYouTubeIframeAPIReady = function() {
+    ytIframeApiReady = true;
+  };
+}
+
 // ─── Course Player ────────────────────────────
 let currentCourseVideos = [];
 
-async function openCoursePlayer(courseId, courseTitle) {
+async function openCoursePlayer(courseId, courseTitle, youtubePlaylistId) {
   initSection('course-player');
   const playlist = document.getElementById('coursePlaylist');
   const titleEl = document.getElementById('currentPlayerCourseTitle');
@@ -305,53 +490,301 @@ async function openCoursePlayer(courseId, courseTitle) {
   if (titleEl) titleEl.textContent = courseTitle;
   if (playlist) playlist.innerHTML = '<div class="p-6 text-center text-gray-400">Loading playlist...</div>';
   
-  // Reset player UI
-  document.getElementById('videoPlaceholder').classList.remove('hidden');
-  document.getElementById('courseVideoPlayer').pause();
-  document.getElementById('courseVideoPlayer').src = '';
-  document.getElementById('currentVideoTitle').textContent = 'Select a Module';
-  document.getElementById('currentVideoDesc').textContent = 'Choose a video from the playlist to start learning.';
+  // UI Elements
+  const player = document.getElementById('courseVideoPlayer');
+  const ytContainer = document.getElementById('youtubePlaylistContainer');
+  const ytIframe = document.getElementById('youtubePlaylistIframe');
+  const placeholder = document.getElementById('videoPlaceholder');
+
+  // Reset UI
+  if (player) { player.pause(); player.src = ''; player.classList.remove('hidden'); }
+  if (ytContainer) ytContainer.classList.add('hidden');
+  if (placeholder) {
+    placeholder.classList.remove('hidden');
+    placeholder.querySelector('h3').textContent = "Select a video to start learning";
+  }
 
   try {
     const res = await StudentAPI.getCourseVideos(courseId);
     currentCourseVideos = Array.isArray(res.data) ? res.data : (res.data.videos || []);
     
-    if (countEl) countEl.textContent = `${currentCourseVideos.length} LESSONS`;
+    if (youtubePlaylistId) {
+      const ytResult = parseYoutubeId(youtubePlaylistId);
+
+      if (ytResult) {
+        // Valid YouTube link — show embed
+        if (player) player.classList.add('hidden');
+        if (ytContainer) ytContainer.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+        ytPlaylistRendered = false;
+        currentCourseIdForYt = courseId;
+        
+        const renderYtPlayer = () => {
+          if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+            try { ytPlayer.destroy(); } catch (e) {}
+          }
+          
+          ytContainer.innerHTML = '<div id="youtubePlaylistIframe" class="w-full h-full"></div>';
+          
+          const playerVars = { autoplay: 0, rel: 0, enablejsapi: 1 };
+          if (ytResult.type === 'playlist') {
+            playerVars.listType = 'playlist';
+            playerVars.list = ytResult.id;
+          }
+          
+          const playerOptions = {
+            height: '100%',
+            width: '100%',
+            playerVars: playerVars,
+            events: {
+              'onReady': (event) => {
+                const tryRender = () => {
+                  if (ytPlaylistRendered) return;
+                  if (ytResult.type === 'video') {
+                    renderYtPlaylist([ytResult.id], courseId);
+                    return;
+                  }
+                  if (event.target && typeof event.target.getPlaylist === 'function') {
+                    const pl = event.target.getPlaylist();
+                    if (pl && pl.length > 0) {
+                      renderYtPlaylist(pl, courseId);
+                    }
+                  }
+                };
+                setTimeout(tryRender, 1000);
+                setTimeout(tryRender, 3000); // Retry in case playlist data is slow
+              },
+              'onStateChange': (event) => {
+                if (ytPlaylistRendered) return;
+                if (ytResult.type === 'video') {
+                  renderYtPlaylist([ytResult.id], courseId);
+                  return;
+                }
+                if (event.target && typeof event.target.getPlaylist === 'function') {
+                  const pl = event.target.getPlaylist();
+                  if (pl && pl.length > 0) {
+                    renderYtPlaylist(pl, courseId);
+                  }
+                }
+              }
+            }
+          };
+          
+          if (ytResult.type === 'video') {
+            playerOptions.videoId = ytResult.id;
+          }
+          
+          ytPlayer = new YT.Player('youtubePlaylistIframe', playerOptions);
+        };
+
+        if (window.YT && window.YT.Player) {
+          renderYtPlayer();
+        } else {
+          const interval = setInterval(() => {
+            if (window.YT && window.YT.Player) {
+              clearInterval(interval);
+              renderYtPlayer();
+            }
+          }, 100);
+        }
+
+        if (playlist) {
+          playlist.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm"><div class="animate-pulse">Loading YouTube Content...</div></div>';
+        }
+      } else {
+        // Invalid YouTube link — show fallback
+        if (player) player.classList.add('hidden');
+        if (ytContainer) ytContainer.classList.add('hidden');
+        if (placeholder) {
+          placeholder.classList.remove('hidden');
+          placeholder.innerHTML = `
+            <div class="text-5xl mb-4">⚠️</div>
+            <h3 class="text-xl font-bold mb-2">Invalid video link</h3>
+            <p class="text-gray-400 text-sm max-w-md">The YouTube link for this course could not be loaded. Please contact the instructor.</p>
+          `;
+        }
+        if (playlist) {
+          playlist.innerHTML = `
+            <div class="p-6 bg-red-50 border-b border-red-100">
+              <div class="text-red-600 font-bold text-sm mb-1 flex items-center gap-2">
+                ⚠️ Invalid Link
+              </div>
+              <p class="text-red-400 text-[10px]">The provided YouTube URL could not be parsed.</p>
+            </div>
+          `;
+        }
+      }
+    }
+
+    if (countEl && !youtubePlaylistId) countEl.textContent = `${currentCourseVideos.length} LESSONS`;
     
-    if (!currentCourseVideos.length) {
-      playlist.innerHTML = '<div class="p-8 text-center text-gray-400"><div class="text-3xl mb-2">📭</div><div class="text-sm font-bold">No videos yet</div><p class="text-[10px] mt-1">Check back later for updates.</p></div>';
+    if (!currentCourseVideos.length && !youtubePlaylistId) {
+      if (playlist) playlist.innerHTML = '<div class="p-8 text-center text-gray-400"><div class="text-3xl mb-2">📭</div><div class="text-sm font-bold">No videos yet</div><p class="text-[10px] mt-1">Check back later for updates.</p></div>';
+      
+      if (placeholder) {
+        placeholder.innerHTML = `
+          <div class="text-4xl mb-4">🎬</div>
+          <h3 class="text-xl font-bold mb-2">No videos available for this course yet</h3>
+          <p class="text-gray-400 text-sm max-w-md">The instructor hasn't uploaded any modules or linked a playlist yet.</p>
+        `;
+      }
       return;
     }
 
-    playlist.innerHTML = currentCourseVideos.map((v, i) => `
-      <div class="playlist-item group p-4 hover:bg-blue-50 cursor-pointer transition flex gap-3 items-center" data-index="${i}">
-        <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 font-bold text-xs group-hover:bg-blue-100 group-hover:text-blue-600 transition">
-          ${String(i + 1).padStart(2, '0')}
+    let completedVideos = {};
+    try {
+      completedVideos = JSON.parse(localStorage.getItem('completed_videos') || '{}');
+    } catch (e) {
+      completedVideos = {};
+    }
+    
+    const videoItems = currentCourseVideos.map((v, i) => {
+      const vid = v._id || `custom_${i}`;
+      const isCompleted = completedVideos[courseId] && completedVideos[courseId].includes(vid);
+      return `
+      <div class="playlist-item group p-4 hover:bg-blue-50 cursor-pointer transition flex flex-col gap-2" data-index="${i}" data-vid="${vid}">
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 font-bold text-xs group-hover:bg-blue-100 group-hover:text-blue-600 transition">
+            ${String(i + 1).padStart(2, '0')}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-bold text-gray-900 truncate group-hover:text-blue-700 transition">${v.title}</div>
+            <div class="text-[10px] text-gray-400 font-medium">Video • Lesson ${i+1}</div>
+          </div>
+          <div class="completion-check text-green-500 ${isCompleted ? '' : 'hidden'}">
+             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <div class="text-xs font-bold text-gray-900 truncate group-hover:text-blue-700 transition">${v.title}</div>
-          <div class="text-[10px] text-gray-400 font-medium">Video • placeholder duration</div>
+        <button class="mark-completed-btn mt-2 bg-white border border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-700 text-[10px] font-bold py-1.5 px-3 rounded-lg transition self-start flex items-center gap-1 shadow-sm ${isCompleted ? 'hidden' : ''}">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Mark as Completed
+        </button>
+      </div>
+      `;
+    }).join('');
+
+    if (playlist && !youtubePlaylistId) {
+      playlist.innerHTML = videoItems;
+    }
+
+    // Attach playlist clicks for internal videos
+    if (!youtubePlaylistId) {
+      document.querySelectorAll('.playlist-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.mark-completed-btn')) {
+            e.stopPropagation();
+            const vid = item.dataset.vid;
+            
+            let completed = {};
+            try {
+              completed = JSON.parse(localStorage.getItem('completed_videos') || '{}');
+            } catch (e) {}
+            if (!completed[courseId]) completed[courseId] = [];
+            if (!completed[courseId].includes(vid)) {
+              completed[courseId].push(vid);
+              localStorage.setItem('completed_videos', JSON.stringify(completed));
+            }
+            
+            item.querySelector('.completion-check').classList.remove('hidden');
+            item.querySelector('.mark-completed-btn').classList.add('hidden');
+            return;
+          }
+
+          const idx = item.dataset.index;
+          playVideoAtIndex(idx);
+          
+          document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-600'));
+          item.classList.add('bg-blue-50', 'border-l-4', 'border-blue-600');
+        });
+      });
+    }
+
+  } catch (error) {
+    if (playlist && !youtubePlaylistId) playlist.innerHTML = '<div class="p-6 text-center text-red-400 text-xs font-bold">Failed to load playlist.</div>';
+  }
+}
+
+function renderYtPlaylist(pl, courseId) {
+  if (ytPlaylistRendered) return;
+  ytPlaylistRendered = true;
+  
+  const countEl = document.getElementById('playlistCount');
+  if (countEl) countEl.textContent = `${pl.length} LESSONS`;
+  
+  const playlist = document.getElementById('coursePlaylist');
+  if (playlist) {
+    let completedVideos = {};
+    try {
+      completedVideos = JSON.parse(localStorage.getItem('completed_videos') || '{}');
+    } catch (e) {
+      completedVideos = {};
+    }
+    
+    const items = pl.map((vid, i) => {
+      const isCompleted = completedVideos[courseId] && completedVideos[courseId].includes(vid);
+      return `
+        <div class="playlist-item group p-4 hover:bg-blue-50 cursor-pointer transition flex flex-col gap-2" data-index="${i}" data-vid="${vid}">
+          <div class="flex items-center gap-3">
+            <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 font-bold text-xs group-hover:bg-blue-100 group-hover:text-blue-600 transition">
+              ${String(i + 1).padStart(2, '0')}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold text-gray-900 truncate group-hover:text-blue-700 transition">Lesson ${i + 1}</div>
+              <div class="text-[10px] text-gray-400 font-medium">Video</div>
+            </div>
+            <div class="completion-check text-green-500 ${isCompleted ? '' : 'hidden'}">
+               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            </div>
+          </div>
+          <button class="mark-completed-btn mt-2 bg-white border border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-700 text-[10px] font-bold py-1.5 px-3 rounded-lg transition self-start flex items-center gap-1 shadow-sm ${isCompleted ? 'hidden' : ''}">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Mark as Completed
+          </button>
         </div>
-        <div class="opacity-0 group-hover:opacity-100 transition text-blue-600">
-           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+      `;
+    }).join('');
+    
+    playlist.innerHTML = `
+      <div class="p-4 bg-blue-50 border-b border-blue-100">
+        <div class="text-blue-700 font-bold text-sm mb-1 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+          YouTube Playlist
         </div>
       </div>
-    `).join('');
-
-    // Attach playlist clicks
+      ${items}
+    `;
+    
+    // Attach clicks
     document.querySelectorAll('.playlist-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const idx = item.dataset.index;
-        playVideoAtIndex(idx);
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.mark-completed-btn')) {
+          e.stopPropagation();
+          const vid = item.dataset.vid;
+          
+          let completed = {};
+          try {
+            completed = JSON.parse(localStorage.getItem('completed_videos') || '{}');
+          } catch (e) {}
+          if (!completed[courseId]) completed[courseId] = [];
+          if (!completed[courseId].includes(vid)) {
+            completed[courseId].push(vid);
+            localStorage.setItem('completed_videos', JSON.stringify(completed));
+          }
+          
+          item.querySelector('.completion-check').classList.remove('hidden');
+          item.querySelector('.mark-completed-btn').classList.add('hidden');
+          return;
+        }
         
-        // UI highlight
+        const idx = parseInt(item.dataset.index);
+        if (ytPlayer && typeof ytPlayer.playVideoAt === 'function') {
+          ytPlayer.playVideoAt(idx);
+        }
+        
         document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-600'));
         item.classList.add('bg-blue-50', 'border-l-4', 'border-blue-600');
       });
     });
-
-  } catch (error) {
-    playlist.innerHTML = '<div class="p-6 text-center text-red-400 text-xs font-bold">Failed to load playlist.</div>';
   }
 }
 
@@ -360,16 +793,21 @@ function playVideoAtIndex(index) {
   if (!video) return;
 
   const player = document.getElementById('courseVideoPlayer');
+  const ytContainer = document.getElementById('youtubePlaylistContainer');
   const placeholder = document.getElementById('videoPlaceholder');
   const title = document.getElementById('currentVideoTitle');
   const desc = document.getElementById('currentVideoDesc');
 
-  placeholder.classList.add('hidden');
-  title.textContent = video.title;
-  desc.textContent = video.description || 'No description available for this lesson.';
+  // Switch to standard player
+  if (ytContainer) ytContainer.classList.add('hidden');
+  if (player) player.classList.remove('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
+
+  if (title) title.textContent = video.title;
+  if (desc) desc.textContent = video.description || 'No description available for this lesson.';
 
   const fileUrl = video.filePath ? `http://localhost:5000/${video.filePath.replace(/\\/g, '/')}` : '';
-  if (fileUrl) {
+  if (fileUrl && player) {
     player.src = fileUrl;
     player.play();
   } else {

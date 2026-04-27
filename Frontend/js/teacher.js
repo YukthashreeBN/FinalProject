@@ -72,11 +72,11 @@ function activateSection(name) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   const el = document.getElementById(`section-${name}`);
   if (el) el.classList.remove('hidden');
-  const titles = { overview: 'Teacher Dashboard', 'create-class': 'Create Course', 'upload-notes': 'Upload Notes', 'create-quiz': 'Create Quiz', 'view-doubts': 'Student Doubts', 'recommend-books': 'Recommend Books', 'book-requests': 'Book Requests' };
+  const titles = { overview: 'Teacher Dashboard', 'my-courses': 'My Courses', 'create-class': 'Create Course', 'upload-notes': 'Upload Notes', 'create-quiz': 'Create Quiz', 'view-doubts': 'Student Doubts', 'recommend-books': 'Recommend Books', 'book-requests': 'Book Requests' };
   const pageTitle = document.getElementById('pageTitle');
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 
-  const loaders = { 'view-doubts': loadDoubts, 'book-requests': loadBookRequests };
+  const loaders = { 'view-doubts': loadDoubts, 'book-requests': loadBookRequests, 'my-courses': loadMyCourses };
   if (loaders[name]) loaders[name]();
   initSectionForms(name);
 }
@@ -102,6 +102,7 @@ function initCreateCourseForm() {
       schedule: document.getElementById('classSchedule').value,
       maxStudents: document.getElementById('classMax').value,
       type: document.getElementById('classType').value,
+      youtubePlaylistId: document.getElementById('classPlaylist').value,
     };
     if (!courseData.name || !courseData.subject) { showToast('Please fill required course fields.', 'error'); return; }
     
@@ -240,6 +241,86 @@ function initCreateQuizForm() {
       qCount = 0;
     } catch { showToast('Failed to save quiz.', 'error'); }
   });
+}
+
+// ─── My Courses ───────────────────────────────
+async function loadMyCourses() {
+  const list = document.getElementById('myCoursesList');
+  if (!list) return;
+  list.innerHTML = '<div class="col-span-full text-center text-gray-400 py-8">Loading your courses...</div>';
+  try {
+    const res = await TeacherAPI.getMyCourses();
+    const courses = res.data?.data || res.data || [];
+    
+    if (!courses.length) {
+      list.innerHTML = '<div class="col-span-full text-center text-gray-400 py-8">You have not created any courses yet.</div>';
+      return;
+    }
+    
+    list.innerHTML = courses.map(course => {
+      const studentsCount = course.enrolledStudents ? course.enrolledStudents.length : 0;
+      return `
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col h-full">
+          <h3 class="font-bold text-lg text-gray-800 mb-2 truncate" title="${course.title}">${course.title}</h3>
+          <p class="text-sm text-gray-500 mb-4 flex-1 line-clamp-2" title="${course.description || ''}">${course.description || 'No description provided.'}</p>
+          <div class="flex items-center justify-between text-xs text-gray-400 mb-4">
+            <span>👥 ${studentsCount} enrolled</span>
+            ${course.youtubePlaylistId ? '<span>🔗 Playlist linked</span>' : ''}
+          </div>
+          <button class="edit-course-btn w-full bg-gray-50 text-gray-700 py-2 rounded-xl text-sm font-semibold hover:bg-gray-100 border border-gray-200 transition" 
+            data-id="${course._id}" 
+            data-title="${encodeURIComponent(course.title)}" 
+            data-desc="${encodeURIComponent(course.description || '')}" 
+            data-playlist="${encodeURIComponent(course.youtubePlaylistId || '')}">
+            Edit Course
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Setup Edit Modal logic
+    const editBtns = document.querySelectorAll('.edit-course-btn');
+    const modal = document.getElementById('editCourseModal');
+    const closeBtns = [document.getElementById('closeEditModalBtn'), document.getElementById('cancelEditModalBtn')];
+    const form = document.getElementById('editCourseForm');
+
+    editBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('editCourseId').value = btn.dataset.id;
+        document.getElementById('editCourseName').value = decodeURIComponent(btn.dataset.title);
+        document.getElementById('editCourseDesc').value = decodeURIComponent(btn.dataset.desc);
+        document.getElementById('editCoursePlaylist').value = decodeURIComponent(btn.dataset.playlist);
+        modal.classList.remove('hidden');
+      });
+    });
+
+    closeBtns.forEach(btn => btn?.addEventListener('click', () => modal.classList.add('hidden')));
+
+    // Only attach submit listener once
+    if (!form.dataset.init) {
+      form.dataset.init = '1';
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editCourseId').value;
+        const data = {
+          title: document.getElementById('editCourseName').value,
+          description: document.getElementById('editCourseDesc').value,
+          youtubePlaylistId: document.getElementById('editCoursePlaylist').value,
+        };
+        try {
+          await TeacherAPI.updateCourse(id, data);
+          showToast('Course updated successfully! ✅', 'success');
+          modal.classList.add('hidden');
+          loadMyCourses(); // refresh list
+        } catch {
+          showToast('Failed to update course.', 'error');
+        }
+      });
+    }
+
+  } catch {
+    list.innerHTML = '<div class="col-span-full text-center text-red-400 py-8">Failed to load courses.</div>';
+  }
 }
 
 // ─── Doubts ───────────────────────────────────

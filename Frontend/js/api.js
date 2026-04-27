@@ -95,7 +95,9 @@ const StudentAPI = {
 //   GET  /api/doubts           → get all doubts
 //   PUT  /api/doubts/:id/reply → reply to a doubt
 const TeacherAPI = {
-  createCourse:  (data)     => api ? api.post('/courses/create', { title: data.name, description: data.description || data.subject }) : simulateSuccess('Course created!'),
+  createCourse:  (data)     => api ? api.post('/courses/create', { title: data.name, description: data.description || data.subject, youtubePlaylistId: data.youtubePlaylistId || "" }) : simulateSuccess('Course created!'),
+  getMyCourses:  ()         => api ? api.get('/courses')                        : simulateMyCourses(),
+  updateCourse:  (id, data) => api ? api.put(`/courses/${id}`, data)            : simulateSuccess('Course updated!'),
   uploadNotes:   (formData) => api ? api.post('/notes/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }) : simulateSuccess('Notes uploaded!'),
   uploadVideo:   (data)     => api ? api.post('/videos/upload', data, { headers: { 'Content-Type': 'multipart/form-data' } }) : simulateSuccess('Video uploaded!'),
   createQuiz:    (data)     => api ? api.post('/quizzes/create', data)          : simulateSuccess('Quiz created!'),
@@ -232,6 +234,13 @@ async function simulateEnrolledCourses() {
   return { data: [
     { _id: '1', title: 'Advanced Calculus', description: 'Mathematics – Mon, Wed 3:00 PM', createdBy: { name: 'Prof. Sharma' } },
   ] };
+}
+
+async function simulateMyCourses() {
+  await simulateDelay(600);
+  return { data: { data: [
+    { _id: '1', title: 'Advanced Calculus', description: 'Mathematics – Mon, Wed 3:00 PM', createdBy: { name: 'Prof. Sharma' }, youtubePlaylistId: 'PLxyz' },
+  ] } };
 }
 
 async function simulateCourseVideos(courseId) {

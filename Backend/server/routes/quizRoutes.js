@@ -27,7 +27,18 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Get quiz questions by ID (hiding correct answers)
+// Get full quiz for taking (includes correct answers for client-side grading)
+router.get("/:id/take", authMiddleware, async (req, res) => {
+    try {
+        const quiz = await Quiz.findById(req.params.id).populate("courseId", "title");
+        if (!quiz) return res.status(404).json({ error: "Quiz not found" });
+        res.status(200).json(quiz);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch quiz." });
+    }
+});
+
+// Get quiz questions by ID (hiding correct answers — for preview/listing)
 router.get("/:id", authMiddleware, async (req, res) => {
     try {
         const quiz = await Quiz.findById(req.params.id, "-questions.correctAnswer").populate("courseId", "title");

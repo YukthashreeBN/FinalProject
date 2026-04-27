@@ -100,41 +100,26 @@
         <!-- Stats -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div class="text-2xl font-bold text-blue-600 mb-1">4</div>
-            <div class="text-xs text-gray-500">Enrolled Classes</div>
+            <div class="text-2xl font-bold text-blue-600 mb-1" id="overviewEnrolledCount">-</div>
+            <div class="text-xs text-gray-500">Enrolled Courses</div>
           </div>
           <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div class="text-2xl font-bold text-green-600 mb-1">12</div>
+            <div class="text-2xl font-bold text-green-600 mb-1" id="overviewVideosCount">-</div>
             <div class="text-xs text-gray-500">Videos Watched</div>
           </div>
           <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div class="text-2xl font-bold text-purple-600 mb-1">5</div>
+            <div class="text-2xl font-bold text-purple-600 mb-1" id="overviewQuizCount">-</div>
             <div class="text-xs text-gray-500">Quizzes Taken</div>
           </div>
           <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-            <div class="text-2xl font-bold text-orange-500 mb-1">87%</div>
+            <div class="text-2xl font-bold text-orange-500 mb-1" id="overviewAvgScore">-</div>
             <div class="text-xs text-gray-500">Avg. Score</div>
           </div>
         </div>
-        <!-- Recent classes -->
-        <h3 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900 mb-4">Upcoming Classes</h3>
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4">
-            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold text-lg">M</div>
-            <div class="flex-1">
-              <div class="font-semibold text-sm text-gray-900">Mathematics – Calculus</div>
-              <div class="text-xs text-gray-400 mt-0.5">Prof. Sharma • Today 3:00 PM</div>
-              <div class="mt-2"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Live Soon</span></div>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start gap-4">
-            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 font-bold text-lg">P</div>
-            <div class="flex-1">
-              <div class="font-semibold text-sm text-gray-900">Physics – Mechanics</div>
-              <div class="text-xs text-gray-400 mt-0.5">Prof. Kapoor • Tomorrow 11:00 AM</div>
-              <div class="mt-2"><span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">Scheduled</span></div>
-            </div>
-          </div>
+        <!-- Continue Learning -->
+        <h3 style="font-family:'Sora',sans-serif" class="font-bold text-lg text-gray-900 mb-4">Continue Learning</h3>
+        <div id="overviewContinueLearningGrid" class="grid md:grid-cols-2 gap-4">
+          <div class="col-span-2 text-center text-gray-400 py-4">Loading your courses...</div>
         </div>
       </section>
 

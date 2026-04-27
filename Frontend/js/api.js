@@ -77,6 +77,7 @@ const StudentAPI = {
   getCourseVideos:     (id) => api ? api.get(`/videos/course/${id}`) : simulateCourseVideos(id),
   getNotes:            () => api ? api.get('/notes')                 : simulateNotes(),
   getQuizzes:          () => api ? api.get('/quizzes')               : simulateQuizzes(),
+  getQuizForTaking:    (id) => api ? api.get(`/quizzes/${id}/take`)  : null,
   submitQuiz:          (id, answers) => api ? api.post(`/quizzes/${id}/submit`, { answers }) : simulateQuizSubmit(answers),
   requestBook:         (data) => api ? api.post('/book-requests', { bookName: data.title || data.bookName, subject: data.subject, reason: data.reason }) : simulateSuccess('Book request submitted!'),
   getMyBookRequests:   () => api ? api.get('/book-requests/my') : simulateMyBookRequests(),

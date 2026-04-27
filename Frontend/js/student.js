@@ -174,6 +174,7 @@ function initSection(name) {
 // ─── Load section data ────────────────────────
 async function loadSection(name) {
   const loaders = {
+    overview: loadOverview,
     classes: loadClasses,
     videos:  loadVideos,
     notes:   loadNotes,
@@ -184,6 +185,86 @@ async function loadSection(name) {
     'my-courses': loadMyCourses,
   };
   if (loaders[name]) await loaders[name]();
+}
+
+// ─── Overview ─────────────────────────────────
+async function loadOverview() {
+  try {
+    // Fetch Data
+    const enrolledRes = await StudentAPI.getEnrolledCourses();
+    const enrolledCourses = Array.isArray(enrolledRes.data) ? enrolledRes.data : (enrolledRes.data.courses || []);
+    
+    // Stats: Enrolled Count
+    const enrolledCountEl = document.getElementById('overviewEnrolledCount');
+    if (enrolledCountEl) enrolledCountEl.textContent = enrolledCourses.length;
+
+    // Stats: Videos Watched
+    let completedVideos = {};
+    try {
+      completedVideos = JSON.parse(localStorage.getItem('completed_videos') || '{}');
+    } catch (e) {}
+    
+    let totalWatched = 0;
+    Object.values(completedVideos).forEach(videos => {
+      if (Array.isArray(videos)) totalWatched += videos.length;
+    });
+    const videosCountEl = document.getElementById('overviewVideosCount');
+    if (videosCountEl) videosCountEl.textContent = totalWatched;
+
+    // Quizzes Taken & Avg Score (Simulated for now if no backend exists for student scores)
+    // We can fetch getQuizzes to just show the count if we have quiz tracking
+    let quizzesTakenCount = 0;
+    let avgScore = 0;
+    try {
+      const storedScores = JSON.parse(localStorage.getItem('ll_quiz_scores') || '[]');
+      quizzesTakenCount = storedScores.length;
+      if (quizzesTakenCount > 0) {
+        const totalPct = storedScores.reduce((sum, item) => sum + item.pct, 0);
+        avgScore = Math.round(totalPct / quizzesTakenCount);
+      }
+    } catch (e) {}
+
+    const quizCountEl = document.getElementById('overviewQuizCount');
+    const avgScoreEl = document.getElementById('overviewAvgScore');
+    if (quizCountEl) quizCountEl.textContent = quizzesTakenCount;
+    if (avgScoreEl) avgScoreEl.textContent = quizzesTakenCount > 0 ? `${avgScore}%` : '-';
+
+    // Continue Learning grid
+    const grid = document.getElementById('overviewContinueLearningGrid');
+    if (grid) {
+      if (enrolledCourses.length === 0) {
+        grid.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-8">You are not enrolled in any courses yet.</div>';
+      } else {
+        const colors = ['bg-blue-100 text-blue-600', 'bg-purple-100 text-purple-600', 'bg-green-100 text-green-600', 'bg-yellow-100 text-yellow-600'];
+        
+        // Show up to 2 most recent courses
+        const displayCourses = enrolledCourses.slice(0, 2);
+        
+        grid.innerHTML = displayCourses.map((c, i) => {
+          const courseId = c._id || c.id;
+          const initial = (c.title || c.name || '?').charAt(0).toUpperCase();
+          const teacherName = c.createdBy ? (c.createdBy.name || 'Teacher') : 'Teacher';
+          
+          return `
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-md transition">
+              <div class="w-12 h-12 ${colors[i % colors.length]} rounded-xl flex items-center justify-center font-bold text-lg shrink-0">${initial}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm text-gray-900 truncate">${c.title || c.name}</div>
+                <div class="text-xs text-gray-400 mt-0.5 truncate">Prof. ${teacherName}</div>
+              </div>
+              <button class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shrink-0 whitespace-nowrap" 
+                      onclick="initSection('my-courses'); loadSection('my-courses'); setTimeout(() => openCoursePlayer('${courseId}', '${(c.title || c.name || '').replace(/'/g, "\\'")}'), 200);">
+                Continue Course
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+  } catch (err) {
+    console.error('Failed to load overview data', err);
+  }
 }
 
 // ─── Classes ──────────────────────────────────
@@ -932,19 +1013,29 @@ async function loadQuizzes() {
   } catch { selector.innerHTML = '<div class="col-span-3 text-center text-red-400 py-8">Failed to load quizzes.</div>'; }
 }
 
-function startQuiz(quiz) {
+async function startQuiz(quiz) {
   const container = document.getElementById('quizContainer');
   if (!container) return;
   container.classList.remove('hidden');
   container.scrollIntoView({ behavior: 'smooth' });
 
+  // Fetch full quiz data (with correctAnswer) from the /take endpoint
+  let fullQuiz = quiz;
+  try {
+    const quizId = quiz._id || quiz.id;
+    const res = await StudentAPI.getQuizForTaking(quizId);
+    if (res && res.data) fullQuiz = res.data;
+  } catch (e) {
+    console.warn('Could not fetch full quiz, using listing data', e);
+  }
+
   // Normalize questions to a common shape regardless of backend vs simulation
-  const questionList = (quiz.questions || quiz.questions_data || []).map(q => ({
+  const questionList = (fullQuiz.questions || fullQuiz.questions_data || []).map(q => ({
     text:    q.questionText || q.q || '',
     options: q.options || [],
-    // Real backend: correctAnswer is the actual string; simulation: answer is the index
+    // correctAnswer is the actual option string; find its index
     correct: typeof q.answer === 'number' ? q.answer :
-             (q.options || []).indexOf(q.correctAnswer),
+             (q.options || []).findIndex(opt => opt === q.correctAnswer),
   }));
 
   let currentQ = 0;
@@ -997,6 +1088,14 @@ function startQuiz(quiz) {
 
   function showResults() {
     const pct = questionList.length ? Math.round((score / questionList.length) * 100) : 0;
+    
+    // Save quiz score to localStorage for Overview stats
+    try {
+      const storedScores = JSON.parse(localStorage.getItem('ll_quiz_scores') || '[]');
+      storedScores.push({ quizId: quiz._id || quiz.id, pct, score, total: questionList.length });
+      localStorage.setItem('ll_quiz_scores', JSON.stringify(storedScores));
+    } catch (e) {}
+
     const color = pct >= 70 ? 'text-green-600' : pct >= 40 ? 'text-yellow-500' : 'text-red-500';
     container.innerHTML = `
       <div class="text-center py-6">

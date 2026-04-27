@@ -229,12 +229,35 @@ function initCreateQuizForm() {
   });
 
   saveBtn && saveBtn.addEventListener('click', async () => {
-    const title = document.getElementById('quizTitle').value;
+    const title = document.getElementById('quizTitle').value.trim();
     if (!title) { showToast('Enter quiz title.', 'error'); return; }
     const qs = builder.querySelectorAll('[data-qid]');
     if (!qs.length) { showToast('Add at least one question.', 'error'); return; }
+
+    // Build proper question objects from the DOM
+    const questions = [];
+    let valid = true;
+    qs.forEach((block) => {
+      const inputs = block.querySelectorAll('input[type="text"]');
+      const select = block.querySelector('select');
+      const questionText = inputs[0] ? inputs[0].value.trim() : '';
+      const options = [];
+      for (let i = 1; i <= 4; i++) {
+        options.push(inputs[i] ? inputs[i].value.trim() : '');
+      }
+      const correctIdx = select ? select.selectedIndex : 0;
+      const correctAnswer = options[correctIdx] || '';
+
+      if (!questionText) { valid = false; }
+      if (options.some(o => !o)) { valid = false; }
+
+      questions.push({ questionText, options, correctAnswer });
+    });
+
+    if (!valid) { showToast('Fill in all question fields and options.', 'error'); return; }
+
     try {
-      await TeacherAPI.createQuiz({ title, questions: qs.length });
+      await TeacherAPI.createQuiz({ title, questions });
       showToast('Quiz saved! ✅', 'success');
       document.getElementById('quizTitle').value = '';
       builder.innerHTML = '';

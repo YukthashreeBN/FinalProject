@@ -1269,7 +1269,7 @@ async function loadDoubtHistory() {
   if (!messages) return;
 
   try {
-    const res = await ChatbotAPI.getMyDoubts();
+    const res = await DoubtAPI.getMyDoubts();
     myDoubts = res.data;
     messages.innerHTML = '';
     
@@ -1339,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', () => {
     messages.scrollTop = messages.scrollHeight;
 
     try {
-      await ChatbotAPI.askDoubt(msg);
+      await DoubtAPI.askDoubt(msg);
       await loadDoubtHistory(); // Reload to sync with DB
     } catch {
       messages.innerHTML += `<div class="text-xs text-red-400 text-center mb-4">Failed to send doubt. Please try again.</div>`;

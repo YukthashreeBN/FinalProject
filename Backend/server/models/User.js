@@ -18,7 +18,14 @@ const userSchema = new mongoose.Schema({
         type:String,
         enum:["student","teacher","admin"],
         default:"student"
-    }
+    },
+    status: {
+        type: String,
+        enum: ["active", "pending", "rejected"],
+        default: "active"
+    },
+    subject: String,
+    experience: String
 },{
     timestamps:true
 });

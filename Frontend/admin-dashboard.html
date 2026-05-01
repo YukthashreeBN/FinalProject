@@ -21,6 +21,7 @@
       <ul class="space-y-1">
         <li><a href="#" class="sidebar-link active" data-section="overview"><span class="sidebar-icon">📊</span>Overview</a></li>
         <li><a href="#" class="sidebar-link" data-section="users"><span class="sidebar-icon">👥</span>Manage Users</a></li>
+        <li><a href="#" class="sidebar-link" data-section="courses"><span class="sidebar-icon">📚</span>Manage Courses</a></li>
         <li><a href="#" class="sidebar-link" data-section="teachers"><span class="sidebar-icon">👩‍🏫</span>Approve Teachers</a></li>
         <li><a href="#" class="sidebar-link" data-section="activity"><span class="sidebar-icon">📈</span>Platform Activity</a></li>
         <li><a href="#" class="sidebar-link" data-section="payments"><span class="sidebar-icon">💰</span>Payments</a></li>
@@ -56,10 +57,10 @@
           <p class="text-gray-500 text-sm">Monitor all platform activity and metrics.</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-blue-600 mb-1">12,485</div><div class="text-xs text-gray-500">Total Students</div></div>
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-green-600 mb-1">834</div><div class="text-xs text-gray-500">Active Teachers</div></div>
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-purple-600 mb-1">324</div><div class="text-xs text-gray-500">Active Courses</div></div>
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div class="text-2xl font-bold text-orange-500 mb-1">₹4.2L</div><div class="text-xs text-gray-500">Revenue (Month)</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div id="stat-students" class="text-2xl font-bold text-blue-600 mb-1">...</div><div class="text-xs text-gray-500">Total Students</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div id="stat-teachers" class="text-2xl font-bold text-green-600 mb-1">...</div><div class="text-xs text-gray-500">Active Teachers</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div id="stat-courses" class="text-2xl font-bold text-purple-600 mb-1">...</div><div class="text-xs text-gray-500">Active Courses</div></div>
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div id="stat-revenue" class="text-2xl font-bold text-orange-500 mb-1">...</div><div class="text-xs text-gray-500">Revenue</div></div>
         </div>
         <div class="grid md:grid-cols-2 gap-5">
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -85,19 +86,8 @@
           </div>
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 style="font-family:'Sora',sans-serif" class="font-bold text-base mb-4">Recent Payments</h3>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between text-sm p-2 border-b border-gray-50">
-                <span class="text-gray-700">Rahul S. – Calculus Pro</span>
-                <span class="text-green-600 font-semibold">₹499</span>
-              </div>
-              <div class="flex items-center justify-between text-sm p-2 border-b border-gray-50">
-                <span class="text-gray-700">Priya K. – Physics Elite</span>
-                <span class="text-green-600 font-semibold">₹799</span>
-              </div>
-              <div class="flex items-center justify-between text-sm p-2">
-                <span class="text-gray-700">Arjun M. – Chemistry</span>
-                <span class="text-green-600 font-semibold">₹599</span>
-              </div>
+            <div class="space-y-3" id="recentPaymentsList">
+              <div class="text-center text-gray-400 py-4 text-sm">Loading...</div>
             </div>
           </div>
         </div>
@@ -110,7 +100,7 @@
           <div class="p-4 border-b border-gray-100 flex items-center gap-3">
             <input type="text" id="userSearch" placeholder="Search by name or email..." class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
             <select id="userRoleFilter" class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-              <option>All Roles</option><option>Student</option><option>Teacher</option>
+              <option>All Roles</option><option>Student</option><option>Teacher</option><option>Admin</option>
             </select>
           </div>
           <div class="overflow-x-auto">
@@ -125,6 +115,29 @@
                 </tr>
               </thead>
               <tbody id="usersTableBody" class="divide-y divide-gray-50"><!-- populated by JS --></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Courses -->
+      <section id="section-courses" class="section-content hidden">
+        <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Manage Courses</h2>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-gray-100 flex items-center gap-3">
+            <input type="text" id="courseSearch" placeholder="Search by title..." class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Course</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Instructor</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Created</th>
+                  <th class="text-left px-5 py-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="coursesTableBody" class="divide-y divide-gray-50"><!-- populated by JS --></tbody>
             </table>
           </div>
         </div>
@@ -191,6 +204,50 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- User Details Modal -->
+  <div id="userModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
+      <button id="closeUserModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <div class="p-6">
+        <div class="flex items-center gap-4 mb-6">
+          <div id="modalUserInitials" class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-2xl"></div>
+          <div>
+            <h3 id="modalUserName" class="text-xl font-bold text-gray-900"></h3>
+            <p id="modalUserEmail" class="text-sm text-gray-500"></p>
+          </div>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Role</p>
+                <p id="modalUserRole" class="text-sm font-medium text-gray-900 capitalize"></p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Status</p>
+                <span id="modalUserStatus" class="text-xs px-2 py-0.5 rounded-full font-medium capitalize"></span>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Joined</p>
+                <p id="modalUserJoined" class="text-sm font-medium text-gray-900"></p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase font-semibold mb-1">User ID</p>
+                <p id="modalUserId" class="text-xs font-mono text-gray-500"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
+        <button id="closeUserModalBtn" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition">Close</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/axios.min.js"></script>

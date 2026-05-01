@@ -23,7 +23,6 @@ livelearn-plus/
 │   ├── student.js              # Student dashboard logic & mock data
 │   ├── teacher.js              # Teacher dashboard logic
 │   ├── admin.js                # Admin dashboard logic
-│   ├── chatbot.js              # Chatbot API integration layer
 │   ├── payment.js              # Payment flow logic
 │   └── api.js                  # Axios config & all API endpoint wrappers
 │
@@ -34,7 +33,6 @@ livelearn-plus/
     ├── modal.js                # Modal dialog component
     ├── quiz.js                 # Full MCQ quiz component
     ├── videoPlayer.js          # Video player helpers
-    └── chatbotUI.js            # Floating chatbot widget UI
 ```
 
 ## Tech Stack
@@ -53,7 +51,7 @@ livelearn-plus/
 | `index.html` | Landing page with hero, features, testimonials |
 | `login.html` | Email/password login with demo account buttons |
 | `register.html` | Name, email, password, role registration |
-| `student-dashboard.html` | Classes, videos, notes, quiz, AI doubt, payments |
+| `student-dashboard.html` | Classes, videos, notes, quiz, doubts, payments |
 | `teacher-dashboard.html` | Create class, upload, quiz builder, doubts, books |
 | `admin-dashboard.html` | Stats, user management, teacher approvals, payments |
 | `payment.html` | Course checkout with card/UPI/net banking UI |
@@ -67,7 +65,7 @@ livelearn-plus/
 
 ### Key Features
 - **Cookie Consent Banner** – Stored in localStorage
-- **AI Chatbot Widget** – Floating button, expandable chat, typing indicators
+- **Teacher Doubt Resolution** – Post doubts and get answers from teachers
 - **Quiz Module** – MCQ with scoring, feedback, retry
 - **Payment Simulation** – Card/UPI/Net Banking UI, success/failure flow
 - **Responsive Sidebar** – Mobile-friendly with overlay
@@ -93,7 +91,7 @@ GET  /api/notes
 POST /api/notes (multipart)
 GET  /api/quizzes
 POST /api/quizzes
-POST /api/chatbot
+POST /api/doubts
 POST /api/ask-doubt
 POST /api/create-order
 POST /api/verify-payment
@@ -111,7 +109,7 @@ GET  /api/admin/payments
 2. Click **Log In** and use a demo account, or register a new one
 3. Explore the dashboard based on your role
 
-> All data is currently mocked. Connect your backend by updating `API_BASE` in `js/api.js` and uncommenting the real API calls in `js/student.js`, `js/teacher.js`, `js/chatbot.js`.
+> All data is currently mocked. Connect your backend by updating `API_BASE` in `js/api.js` and uncommenting the real API calls in `js/student.js`, `js/teacher.js`.
 
 ## Design
 

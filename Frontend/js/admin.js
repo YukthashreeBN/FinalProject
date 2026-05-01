@@ -6,11 +6,21 @@ document.addEventListener('DOMContentLoaded', () => {
   requireAuth();
   initSidebar();
   activateSection('overview');
+
+  const closeIcon = document.getElementById('closeUserModal');
+  const closeBtn = document.getElementById('closeUserModalBtn');
+  if (closeIcon) closeIcon.addEventListener('click', closeUserModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeUserModal);
+
+  const userSearch = document.getElementById('userSearch');
+  const userRoleFilter = document.getElementById('userRoleFilter');
+  if (userSearch) userSearch.addEventListener('input', renderUsers);
+  if (userRoleFilter) userRoleFilter.addEventListener('change', renderUsers);
 });
 
 function requireAuth() {
   const user = getStoredUser();
-  if (!user) window.location.href = 'login.html';
+  if (!user || user.role !== 'admin') window.location.href = 'login.html';
 }
 
 function getStoredUser() {
@@ -54,15 +64,105 @@ function activateSection(name) {
   document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
   const el = document.getElementById(`section-${name}`);
   if (el) el.classList.remove('hidden');
-  const titles = { overview: 'Admin Overview', users: 'Manage Users', teachers: 'Approve Teachers', activity: 'Platform Activity', payments: 'Payment Records' };
+  const titles = { overview: 'Admin Overview', users: 'Manage Users', courses: 'Manage Courses', teachers: 'Approve Teachers', activity: 'Platform Activity', payments: 'Payment Records' };
   const pageTitle = document.getElementById('pageTitle');
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 
-  const loaders = { users: loadUsers, teachers: loadPendingTeachers, payments: loadPayments };
+  const loaders = { overview: loadOverview, users: loadUsers, courses: loadCourses, teachers: loadPendingTeachers, payments: loadPayments };
   if (loaders[name]) loaders[name]();
 }
 
+// ─── Overview ────────────────────────────────────────────
+async function loadOverview() {
+  const list = document.getElementById('pendingApprovals');
+  const recentList = document.getElementById('recentPaymentsList');
+  if (!list) return;
+  list.innerHTML = '<div class="text-center text-gray-400 py-4">Loading...</div>';
+  if (recentList) recentList.innerHTML = '<div class="text-center text-gray-400 py-4 text-sm">Loading...</div>';
+  
+  try {
+    // 1. Fetch Overview Stats
+    try {
+        const overviewRes = await AdminAPI.getOverview();
+        const { stats, recentPayments } = overviewRes.data;
+        
+        // Populate stats
+        const statStudents = document.getElementById('stat-students');
+        const statTeachers = document.getElementById('stat-teachers');
+        const statCourses = document.getElementById('stat-courses');
+        const statRevenue = document.getElementById('stat-revenue');
+        
+        if (statStudents) statStudents.textContent = stats.totalStudents.toLocaleString();
+        if (statTeachers) statTeachers.textContent = stats.activeTeachers.toLocaleString();
+        if (statCourses) statCourses.textContent = stats.activeCourses.toLocaleString();
+        if (statRevenue) statRevenue.textContent = `₹${stats.totalRevenue.toLocaleString()}`;
+        
+        // Populate recent payments
+        if (recentList) {
+            if (!recentPayments || recentPayments.length === 0) {
+                recentList.innerHTML = '<div class="text-center text-gray-400 py-4 text-sm">No recent payments.</div>';
+            } else {
+                recentList.innerHTML = recentPayments.map(p => `
+                    <div class="flex items-center justify-between text-sm p-2 border-b border-gray-50 last:border-0">
+                        <span class="text-gray-700">${p.student} – ${p.course}</span>
+                        <span class="text-green-600 font-semibold">₹${p.amount}</span>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load overview stats", e);
+    }
+
+    // 2. Fetch pending teachers
+    const res = await AdminAPI.getTeachers();
+    const teachers = res.data.teachers || [];
+    if (!teachers.length) { list.innerHTML = '<div class="text-center text-gray-400 py-4">No pending approvals.</div>'; return; }
+    
+    // show up to 3 in overview
+    const displayTeachers = teachers.slice(0, 3);
+    
+    list.innerHTML = displayTeachers.map(t => {
+      const tid = t.id || t._id;
+      return `
+        <div class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+          <div class="w-8 h-8 bg-yellow-200 rounded-full flex items-center justify-center text-yellow-700 font-bold text-sm">${t.name.charAt(0)}</div>
+          <div class="flex-1"><div class="text-sm font-medium">${t.name}</div><div class="text-xs text-gray-500">Teacher • ${t.subject || 'N/A'}</div></div>
+          <div class="flex gap-2">
+            <button class="overview-approve-btn text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg font-semibold hover:bg-green-200" data-id="${tid}">Approve</button>
+            <button class="overview-reject-btn text-xs bg-red-100 text-red-700 px-2 py-1 rounded-lg font-semibold hover:bg-red-200" data-id="${tid}">Reject</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    document.querySelectorAll('.overview-approve-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try { 
+            await AdminAPI.approveTeacher(btn.dataset.id); 
+            showToast('Teacher approved! ✅', 'success'); 
+            const container = btn.parentElement;
+            container.innerHTML = '<span class="text-green-600 font-semibold text-sm bg-green-50 px-2 py-1 rounded">Approved</span>';
+        }
+        catch { showToast('Failed to approve.', 'error'); }
+      });
+    });
+    document.querySelectorAll('.overview-reject-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try { 
+            await AdminAPI.rejectTeacher(btn.dataset.id); 
+            showToast('Teacher rejected.', 'info'); 
+            const container = btn.parentElement;
+            container.innerHTML = '<span class="text-red-600 font-semibold text-sm bg-red-50 px-2 py-1 rounded">Rejected</span>';
+        }
+        catch { showToast('Failed to reject.', 'error'); }
+      });
+    });
+  } catch { list.innerHTML = '<div class="text-center text-red-400 py-4">Failed to load.</div>'; }
+}
+
 // ─── Users ────────────────────────────────────────────
+let allUsers = [];
+
 async function loadUsers() {
   const tbody = document.getElementById('usersTableBody');
   if (!tbody) return;
@@ -70,31 +170,123 @@ async function loadUsers() {
   try {
     const res   = await AdminAPI.getUsers();
     // Backend returns { users: [...] }, simulation returns same shape
-    const users = res.data.users || (Array.isArray(res.data) ? res.data : []);
-    const statusColors = { active: 'bg-green-100 text-green-700', inactive: 'bg-gray-100 text-gray-600', pending: 'bg-yellow-100 text-yellow-700' };
-    tbody.innerHTML = users.map(u => {
-      const joinedDate = u.joined || (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A');
-      const status     = u.status || 'active';
+    allUsers = res.data.users || (Array.isArray(res.data) ? res.data : []);
+    renderUsers();
+  } catch { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-red-400">Failed to load users.</td></tr>'; }
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+
+  const searchInput = document.getElementById('userSearch');
+  const roleFilter = document.getElementById('userRoleFilter');
+  
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  const selectedRole = roleFilter ? roleFilter.value.toLowerCase() : 'all roles';
+
+  const filteredUsers = allUsers.filter(u => {
+    const nameMatch = u.name && u.name.toLowerCase().includes(searchTerm);
+    const emailMatch = u.email && u.email.toLowerCase().includes(searchTerm);
+    const matchesSearch = nameMatch || emailMatch;
+    const matchesRole = selectedRole === 'all roles' || (u.role && u.role.toLowerCase() === selectedRole);
+    return matchesSearch && matchesRole;
+  });
+
+  const statusColors = { active: 'bg-green-100 text-green-700', inactive: 'bg-gray-100 text-gray-600', pending: 'bg-yellow-100 text-yellow-700' };
+  
+  if (filteredUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-500">No users found matching filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filteredUsers.map(u => {
+    const joinedDate = u.joined || (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A');
+    const status     = u.status || 'active';
+    return `
+      <tr class="hover:bg-gray-50">
+        <td class="px-5 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">${u.name ? u.name.charAt(0).toUpperCase() : '?'}</div>
+            <div><div class="font-medium text-sm text-gray-900">${u.name || 'Unknown'}</div><div class="text-xs text-gray-400">${u.email || 'N/A'}</div></div>
+          </div>
+        </td>
+        <td class="px-5 py-3 text-sm capitalize text-gray-600">${u.role || 'student'}</td>
+        <td class="px-5 py-3"><span class="${statusColors[status] || 'bg-gray-100 text-gray-600'} text-xs px-2 py-0.5 rounded-full font-medium capitalize">${status}</span></td>
+        <td class="px-5 py-3 text-sm text-gray-500">${joinedDate}</td>
+        <td class="px-5 py-3">
+          <div class="flex gap-2">
+            <button class="text-xs text-blue-600 hover:underline font-medium view-user-btn" data-user='${JSON.stringify(u).replace(/'/g, "&#39;")}'>View</button>
+            <button class="text-xs text-red-500 hover:underline font-medium delete-user-btn" data-id="${u._id || u.id}">Remove</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.querySelectorAll('.view-user-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      try {
+        const userStr = btn.getAttribute('data-user');
+        const user = JSON.parse(userStr);
+        showUserModal(user);
+      } catch(e) { console.error('Error parsing user data', e); }
+    });
+  });
+
+  document.querySelectorAll('.delete-user-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to delete this user?')) return;
+      try {
+        await AdminAPI.deleteUser(btn.dataset.id);
+        showToast('User deleted successfully.', 'success');
+        loadUsers();
+      } catch {
+        showToast('Failed to delete user.', 'error');
+      }
+    });
+  });
+}
+
+// ─── Courses ────────────────────────────────────────────
+async function loadCourses() {
+  const tbody = document.getElementById('coursesTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400">Loading courses...</td></tr>';
+  try {
+    const res   = await AdminAPI.getCourses();
+    const courses = res.data.courses || (Array.isArray(res.data) ? res.data : []);
+    tbody.innerHTML = courses.map(c => {
+      const createdDate = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'N/A';
+      const cid = c.id || c._id;
       return `
         <tr class="hover:bg-gray-50">
           <td class="px-5 py-3">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">${u.name.charAt(0)}</div>
-              <div><div class="font-medium text-sm text-gray-900">${u.name}</div><div class="text-xs text-gray-400">${u.email}</div></div>
-            </div>
+            <div class="font-medium text-sm text-gray-900">${c.title}</div>
           </td>
-          <td class="px-5 py-3 text-sm capitalize text-gray-600">${u.role}</td>
-          <td class="px-5 py-3"><span class="${statusColors[status] || 'bg-gray-100 text-gray-600'} text-xs px-2 py-0.5 rounded-full font-medium capitalize">${status}</span></td>
-          <td class="px-5 py-3 text-sm text-gray-500">${joinedDate}</td>
+          <td class="px-5 py-3 text-sm text-gray-600">${c.createdBy?.name || 'Unknown'}</td>
+          <td class="px-5 py-3 text-sm text-gray-500">${createdDate}</td>
           <td class="px-5 py-3">
             <div class="flex gap-2">
-              <button class="text-xs text-blue-600 hover:underline font-medium">View</button>
-              <button class="text-xs text-red-500 hover:underline font-medium">Remove</button>
+              <button class="text-xs text-red-500 hover:underline font-medium delete-course-btn" data-id="${cid}">Delete</button>
             </div>
           </td>
         </tr>`;
     }).join('');
-  } catch { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-red-400">Failed to load users.</td></tr>'; }
+
+    document.querySelectorAll('.delete-course-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to delete this course?')) return;
+        try {
+          await AdminAPI.deleteCourse(btn.dataset.id);
+          showToast('Course deleted successfully.', 'success');
+          loadCourses();
+        } catch {
+          showToast('Failed to delete course.', 'error');
+        }
+      });
+    });
+
+  } catch { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-red-400">Failed to load courses.</td></tr>'; }
 }
 
 // ─── Pending Teachers ─────────────────────────────────────
@@ -125,13 +317,23 @@ async function loadPendingTeachers() {
 
     document.querySelectorAll('.approve-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        try { await AdminAPI.approveTeacher(btn.dataset.id); showToast('Teacher approved! ✅', 'success'); loadPendingTeachers(); }
+        try { 
+            await AdminAPI.approveTeacher(btn.dataset.id); 
+            showToast('Teacher approved! ✅', 'success'); 
+            const container = btn.parentElement;
+            container.innerHTML = '<span class="text-green-600 font-semibold px-4 py-2 bg-green-50 rounded-xl inline-block">Approved</span>';
+        }
         catch { showToast('Failed to approve.', 'error'); }
       });
     });
     document.querySelectorAll('.reject-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        try { await AdminAPI.rejectTeacher(btn.dataset.id); showToast('Teacher rejected.', 'info'); loadPendingTeachers(); }
+        try { 
+            await AdminAPI.rejectTeacher(btn.dataset.id); 
+            showToast('Teacher rejected.', 'info'); 
+            const container = btn.parentElement;
+            container.innerHTML = '<span class="text-red-600 font-semibold px-4 py-2 bg-red-50 rounded-xl inline-block">Rejected</span>';
+        }
         catch { showToast('Failed to reject.', 'error'); }
       });
     });
@@ -164,4 +366,31 @@ function showToast(msg, type = 'info') {
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
+}
+
+function showUserModal(user) {
+  const modal = document.getElementById('userModal');
+  if (!modal) return;
+  
+  document.getElementById('modalUserInitials').textContent = user.name ? user.name.charAt(0).toUpperCase() : '?';
+  document.getElementById('modalUserName').textContent = user.name || 'Unknown';
+  document.getElementById('modalUserEmail').textContent = user.email || 'N/A';
+  document.getElementById('modalUserRole').textContent = user.role || 'student';
+  document.getElementById('modalUserId').textContent = user._id || user.id || 'N/A';
+  
+  const status = user.status || 'active';
+  const statusEl = document.getElementById('modalUserStatus');
+  statusEl.textContent = status;
+  statusEl.className = 'text-xs px-2 py-0.5 rounded-full font-medium capitalize ';
+  const statusColors = { active: 'bg-green-100 text-green-700', inactive: 'bg-gray-100 text-gray-600', pending: 'bg-yellow-100 text-yellow-700' };
+  statusEl.className += (statusColors[status] || 'bg-gray-100 text-gray-600');
+  
+  document.getElementById('modalUserJoined').textContent = user.joined || (user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A');
+  
+  modal.classList.remove('hidden');
+}
+
+function closeUserModal() {
+  const modal = document.getElementById('userModal');
+  if (modal) modal.classList.add('hidden');
 }

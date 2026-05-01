@@ -24,12 +24,17 @@ router.post("/register", async (req, res) => {
         const hashedPassword = await
             bcrypt.hash(password, 10);
 
+        const status = role === 'teacher' ? 'pending' : 'active';
+
         //Create new user
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
-            role
+            role,
+            status,
+            subject: req.body.subject || null,
+            experience: req.body.experience || null
         });
 
         res.status(201).json({

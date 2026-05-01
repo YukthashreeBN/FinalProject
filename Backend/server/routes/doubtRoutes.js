@@ -14,45 +14,40 @@ router.post("/", authMiddleware, async (req, res) => {
             return res.status(400).json({ reply: "Question text is required." });
         }
 
-        // Initialize Gemini
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const prompt = `You are "LiveLearn AI", an academic tutor. Answer the student's doubt logically. Keep it under 250 words. Do not use Markdown formatting.\n\nStudent question: ${questionText.trim()}\n\nAnswer:`;
-
-        // Generate response
-        const result = await model.generateContent(prompt);
-        let reply = result.response.text();
-        
-        // Clean away any markdown traces
-        reply = reply.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1").trim();
-
-        // Save to DB
+        // ── Step 1: Save doubt to DB FIRST so it always appears on the teacher dashboard ──
+        let savedDoubt;
         try {
-            await Doubt.create({
+            savedDoubt = await Doubt.create({
                 studentId: req.user.id,
-                questionText,
-                aiResponse: reply, // Stored as aiResponse in DB
+                questionText: questionText.trim(),
             });
         } catch (dbErr) {
-            console.error("DB Error:", dbErr);
+            console.error("DB Error saving doubt:", dbErr);
+            return res.status(500).json({ reply: "Failed to save your doubt. Please try again." });
         }
 
-        // Always return response in this format
-        res.json({ reply });
+        // ── Step 2: Return success response ──
+        res.json({ reply: "Your doubt has been submitted to the teacher.", doubtId: savedDoubt._id });
 
     } catch (err) {
-        console.error("Gemini error:", err);
-        res.status(500).json({ reply: "Sorry, I'm having trouble right now. Please try again." });
+        console.error("Doubt route error:", err);
+        res.status(500).json({ reply: "Sorry, something went wrong. Please try again." });
     }
 });
 
 // ── GET /api/doubts ──
 router.get("/", authMiddleware, async (req, res) => {
     try {
-        const doubts = await Doubt.find()
+        let query = {};
+        // If the user is a student, only return their own doubts
+        if (req.user.role === "student") {
+            query.studentId = req.user.id;
+        }
+
+        const doubts = await Doubt.find(query)
             .populate("studentId", "name email")
-            .populate("repliedBy", "name");
+            .populate("repliedBy", "name")
+            .sort({ createdAt: 1 }); // Sort oldest first so chat flows naturally
         res.status(200).json(doubts);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch doubts." });

@@ -111,7 +111,34 @@ async function loadNotifications() {
   try {
     const res = await StudentAPI.getNotifications();
     const notifs = res.data || [];
-    const unreadCount = notifs.filter(n => !n.isRead).length;
+    let unreadCount = notifs.filter(n => !n.isRead).length;
+
+    // --- DOUBT NOTIFICATIONS INJECTION ---
+    let doubtNotifHtml = '';
+    let unreadDoubts = 0;
+    if (typeof myDoubts !== 'undefined' && myDoubts.length > 0) {
+      const seenDoubts = JSON.parse(localStorage.getItem('seenDoubts') || '[]');
+      const unreadDoubtList = myDoubts.filter(d => d.teacherReply && !seenDoubts.includes(d._id));
+      unreadDoubts = unreadDoubtList.length;
+      
+      unreadDoubtList.forEach(d => {
+        doubtNotifHtml += `<div class="p-4 hover:bg-gray-50 cursor-pointer transition flex gap-3 bg-blue-50/20" onclick="document.querySelector('[data-section=doubt]').click()">
+            <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-green-100 text-green-600">
+              💬
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-xs font-bold text-gray-900 mb-0.5">Teacher replied to your doubt</div>
+              <div class="text-[11px] text-gray-500 leading-snug line-clamp-2">"${d.questionText}"</div>
+              <div class="text-[9px] text-gray-400 font-medium mt-1 flex items-center justify-between">
+                Just now
+                <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+
+    unreadCount += unreadDoubts;
 
     // Update badge
     if (unreadCount > 0) {
@@ -121,12 +148,13 @@ async function loadNotifications() {
       badge.classList.add('hidden');
     }
 
-    if (!notifs.length) {
+    if (!notifs.length && unreadDoubts === 0) {
       list.innerHTML = '<div class="p-8 text-center text-gray-400"><div class="text-3xl mb-2">🔔</div><div class="text-sm font-medium">No new notifications</div></div>';
       return;
     }
 
-    list.innerHTML = notifs.map(n => `
+    // Combine Doubt Replies + System Notifications
+    let sysNotifHtml = notifs.map(n => `
       <div class="p-4 hover:bg-gray-50 cursor-pointer transition flex gap-3 ${n.isRead ? 'opacity-60' : 'bg-blue-50/20'}" onclick="handleNotifClick('${n._id}', '${n.type}', '${n.courseId || ''}', '${(n.title || '').replace(/'/g, "\\'")}')">
         <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center ${n.type === 'VIDEO_UPLOAD' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}">
           ${n.type === 'VIDEO_UPLOAD' ? '🎥' : '✉️'}
@@ -141,6 +169,8 @@ async function loadNotifications() {
         </div>
       </div>
     `).join('');
+
+    list.innerHTML = doubtNotifHtml + sysNotifHtml;
 
   } catch (err) {
     list.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Failed to load.</div>';
@@ -1232,10 +1262,70 @@ async function loadMyBookRequests() {
 }
 
 // ─── Doubt chat (inline) ─────────────────────
+let myDoubts = [];
+
+async function loadDoubtHistory() {
+  const messages = document.getElementById('doubtChatMessages');
+  if (!messages) return;
+
+  try {
+    const res = await ChatbotAPI.getMyDoubts();
+    myDoubts = res.data;
+    messages.innerHTML = '';
+    
+    let unreadReplies = 0;
+
+    myDoubts.forEach(doubt => {
+      // Student's message bubble (right)
+      messages.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white rounded-xl rounded-br-none p-3 text-sm max-w-xs shadow-sm">${doubt.questionText}</div></div>`;
+      
+      // Teacher's reply bubble (left), if it exists
+      if (doubt.teacherReply) {
+        messages.innerHTML += `<div class="flex gap-3 mt-2 mb-6"><div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-xs font-bold flex-shrink-0 shadow-sm">T</div><div class="bg-blue-50 rounded-xl rounded-tl-none p-3 text-sm text-gray-700 max-w-xs border border-blue-100 shadow-sm"><div class="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wide">${doubt.repliedBy?.name || 'Teacher'}</div>${doubt.teacherReply}</div></div>`;
+        
+        const seenDoubts = JSON.parse(localStorage.getItem('seenDoubts') || '[]');
+        if (!seenDoubts.includes(doubt._id)) {
+          unreadReplies++;
+        }
+      } else {
+        messages.innerHTML += `<div class="mb-4"></div>`;
+      }
+    });
+
+    // Only scroll to bottom if we are actively viewing the chat, or if it's the first load
+    if (document.getElementById('section-doubt').classList.contains('hidden') === false) {
+       messages.scrollTop = messages.scrollHeight;
+    }
+
+    loadNotifications();
+
+  } catch (err) {
+    console.error("Failed to load doubt history:", err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const sendBtn  = document.getElementById('sendDoubt');
   const input    = document.getElementById('doubtInput');
   const messages = document.getElementById('doubtChatMessages');
+
+  // Load history on start and poll every 10 seconds
+  loadDoubtHistory();
+  setInterval(loadDoubtHistory, 10000);
+
+  // Mark as read when clicking the Doubt section
+  document.querySelector('[data-section="doubt"]')?.addEventListener('click', () => {
+     if (myDoubts.length > 0) {
+         const repliedIds = myDoubts.filter(d => d.teacherReply).map(d => d._id);
+         const seenDoubts = JSON.parse(localStorage.getItem('seenDoubts') || '[]');
+         const newSeen = [...new Set([...seenDoubts, ...repliedIds])];
+         localStorage.setItem('seenDoubts', JSON.stringify(newSeen));
+         loadNotifications(); // Refresh notifications dropdown
+         setTimeout(() => {
+           if (messages) messages.scrollTop = messages.scrollHeight;
+         }, 100);
+     }
+  });
 
   sendBtn && sendBtn.addEventListener('click', sendDoubt);
   input   && input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendDoubt(); });
@@ -1245,20 +1335,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!msg || !messages) return;
     input.value = '';
 
-    // User bubble
-    messages.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white rounded-xl rounded-br-none p-3 text-sm max-w-xs">${msg}</div></div>`;
-    messages.innerHTML += `<div id="typingDoubt" class="flex gap-2 items-center"><div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs flex-shrink-0">AI</div><div class="text-xs text-gray-400 italic">Typing...</div></div>`;
+    messages.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white rounded-xl rounded-br-none p-3 text-sm max-w-xs shadow-sm">${msg}</div></div><div class="mb-4"></div>`;
     messages.scrollTop = messages.scrollHeight;
 
     try {
-      const res   = await ChatbotAPI.askDoubt(msg);
-      const reply = res.data.reply;
-      document.getElementById('typingDoubt')?.remove();
-      messages.innerHTML += `<div class="flex gap-3"><div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xs font-bold flex-shrink-0">AI</div><div class="bg-blue-50 rounded-xl rounded-tl-none p-3 text-sm text-gray-700 max-w-xs">${reply}</div></div>`;
-      messages.scrollTop = messages.scrollHeight;
+      await ChatbotAPI.askDoubt(msg);
+      await loadDoubtHistory(); // Reload to sync with DB
     } catch {
-      document.getElementById('typingDoubt')?.remove();
-      messages.innerHTML += `<div class="text-xs text-red-400 text-center">Failed to get response.</div>`;
+      messages.innerHTML += `<div class="text-xs text-red-400 text-center mb-4">Failed to send doubt. Please try again.</div>`;
     }
   }
 });

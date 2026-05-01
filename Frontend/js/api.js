@@ -150,10 +150,13 @@ const ChatbotAPI = {
   },
 
   // Posts to /api/doubts and normalises the response shape.
-  // Errors are intentionally surfaced so the UI can show them.
+  // Backend returns { reply: "...", doubtId: "..." }
   askDoubt: (doubt) =>
     api.post('/doubts', { questionText: doubt })
-       .then(res => ({ data: { reply: res.data.aiResponse || res.data.questionText || 'Response received!' } })),
+       .then(res => ({ data: { reply: res.data.reply || res.data.aiResponse || 'Your doubt has been submitted!' } })),
+
+  // Fetches the student's past doubts for persistent chat history
+  getMyDoubts: () => api.get('/doubts'),
 };
 
 // ─────────────── PAYMENT ───────────────

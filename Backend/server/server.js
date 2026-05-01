@@ -17,6 +17,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const bookRecommendationRoutes = require("./routes/bookRecommendationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const teacherRoutes = require("./routes/teacherRoutes");
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/book-recommendations", bookRecommendationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/teacher", teacherRoutes);
 
 app.get("/", (req, res) => {
     res.send("LiveLearn Plus Backend Running!");

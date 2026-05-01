@@ -76,7 +76,7 @@ function activateSection(name) {
   const pageTitle = document.getElementById('pageTitle');
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 
-  const loaders = { 'view-doubts': loadDoubts, 'book-requests': loadBookRequests, 'my-courses': loadMyCourses };
+  const loaders = { overview: loadOverview, 'view-doubts': loadDoubts, 'book-requests': loadBookRequests, 'my-courses': loadMyCourses };
   if (loaders[name]) loaders[name]();
   initSectionForms(name);
 }
@@ -86,6 +86,44 @@ function initSectionForms(name) {
   if (name === 'upload-notes')    initUploadNotesForm();
   if (name === 'create-quiz')     initCreateQuizForm();
   if (name === 'recommend-books') initRecommendBooksForm();
+}
+
+// ─── Overview ─────────────────────────────────
+async function loadOverview() {
+  try {
+    const res = await TeacherAPI.getOverview();
+    const data = res.data;
+
+    const elActiveClasses = document.getElementById('statActiveClasses');
+    const elTotalStudents = document.getElementById('statTotalStudents');
+    const elNotesUploaded = document.getElementById('statNotesUploaded');
+    const elPendingDoubts = document.getElementById('statPendingDoubts');
+    const elRecentDoubts = document.getElementById('recentDoubtsOverview');
+
+    if (elActiveClasses) elActiveClasses.textContent = data.activeClasses || 0;
+    if (elTotalStudents) elTotalStudents.textContent = data.totalStudents || 0;
+    if (elNotesUploaded) elNotesUploaded.textContent = data.notesUploaded || 0;
+    if (elPendingDoubts) elPendingDoubts.textContent = data.pendingDoubtsCount || 0;
+
+    if (elRecentDoubts) {
+      if (!data.recentDoubts || data.recentDoubts.length === 0) {
+        elRecentDoubts.innerHTML = '<p class="text-sm text-gray-500">No recent doubts right now.</p>';
+      } else {
+        elRecentDoubts.innerHTML = data.recentDoubts.map(d => {
+          const studentName = d.studentId ? d.studentId.name : 'Unknown Student';
+          const question = d.questionText || '';
+          return `
+            <div class="p-3 bg-gray-50 rounded-xl">
+              <p class="text-sm font-semibold text-gray-800 mb-1">${studentName}</p>
+              <p class="text-xs text-gray-600 line-clamp-2">${question}</p>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load overview data:', error);
+  }
 }
 
 // ─── Create Course ─────────────────────────────
@@ -176,9 +214,17 @@ function initUploadNotesForm() {
     e.preventDefault();
     const title   = document.getElementById('notesTitle').value;
     const subject = document.getElementById('notesSubject').value;
-    if (!title || !subject) { showToast('Please fill all fields.', 'error'); return; }
+    const file    = fileInput.files[0];
+    
+    if (!title || !subject || !file) { showToast('Please fill all fields and select a file.', 'error'); return; }
+    
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('subject', subject);
+    formData.append('file', file);
+    
     try {
-      await TeacherAPI.uploadNotes({ title, subject });
+      await TeacherAPI.uploadNotes(formData);
       showToast('Notes uploaded successfully! ✅', 'success');
       form.reset();
       preview.classList.add('hidden');

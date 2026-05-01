@@ -65,6 +65,7 @@ const StudentAPI = {
 
 // ─────────────── TEACHER ───────────────
 const TeacherAPI = {
+  getOverview:   ()         => api.get('/teacher/overview'),
   createCourse:  (data)     => api.post('/courses/create', { title: data.name, description: data.description || data.subject, youtubePlaylistId: data.youtubePlaylistId || "" }),
   getMyCourses:  ()         => api.get('/courses'),
   updateCourse:  (id, data) => api.put(`/courses/${id}`, data),

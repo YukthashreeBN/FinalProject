@@ -68,7 +68,7 @@ function activateSection(name) {
   const pageTitle = document.getElementById('pageTitle');
   if (pageTitle) pageTitle.textContent = titles[name] || name;
 
-  const loaders = { overview: loadOverview, users: loadUsers, courses: loadCourses, teachers: loadPendingTeachers, payments: loadPayments };
+  const loaders = { overview: loadOverview, users: loadUsers, courses: loadCourses, teachers: loadPendingTeachers, payments: loadPayments, activity: loadActivity };
   if (loaders[name]) loaders[name]();
 }
 
@@ -343,11 +343,18 @@ async function loadPendingTeachers() {
 // ─── Payments ─────────────────────────────────
 async function loadPayments() {
   const tbody = document.getElementById('paymentsTableBody');
+  const totalAmountEl = document.getElementById('totalPaymentsAmount');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400">Loading...</td></tr>';
   try {
     const res      = await AdminAPI.getPayments();
     const payments = res.data.payments || [];
+    const totalAmount = res.data.totalAmount || 0;
+    
+    if (totalAmountEl) {
+      totalAmountEl.textContent = `₹${totalAmount.toLocaleString()}`;
+    }
+    
     tbody.innerHTML = payments.map(p => `
       <tr class="hover:bg-gray-50">
         <td class="px-5 py-3 text-sm font-mono text-blue-600">${p.orderId}</td>
@@ -358,6 +365,71 @@ async function loadPayments() {
         <td class="px-5 py-3 text-sm text-gray-500">${p.date}</td>
       </tr>`).join('');
   } catch { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-red-400">Failed to load.</td></tr>'; }
+}
+
+// ─── Activity ─────────────────────────────────
+async function loadActivity() {
+  const chartContainer = document.getElementById('activityChart');
+  const statsContainer = document.getElementById('contentStats');
+  if (!chartContainer || !statsContainer) return;
+  
+  chartContainer.innerHTML = '<div class="text-center py-4 text-gray-400">Loading chart...</div>';
+  statsContainer.innerHTML = '<div class="text-center py-4 text-gray-400">Loading stats...</div>';
+  
+  try {
+    const res = await AdminAPI.getActivity();
+    const { newUsers, contentStats } = res.data;
+    
+    // Render New Users Chart
+    if (newUsers && newUsers.length > 0) {
+      // Find max count for relative width scaling (ensure minimum scale of 1 to avoid division by zero)
+      const maxCount = Math.max(...newUsers.map(u => u.count), 1);
+      
+      chartContainer.innerHTML = newUsers.map(u => {
+        // Calculate percentage width (min 2% so the bar is at least barely visible)
+        let percent = Math.max((u.count / maxCount) * 100, 2);
+        if (u.count === 0) percent = 0; // if exactly zero, show nothing
+        
+        return `
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-500 w-10">${u.day}</span>
+            <div class="flex-1 bg-gray-100 rounded-full h-3">
+              <div class="bg-blue-500 h-3 rounded-full transition-all duration-1000" style="width:${percent}%"></div>
+            </div>
+            <span class="text-xs font-semibold text-gray-600 w-8 text-right">${u.count}</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      chartContainer.innerHTML = '<div class="text-center py-4 text-gray-400 text-sm">No recent registration data.</div>';
+    }
+
+    // Render Content Stats
+    if (contentStats) {
+      statsContainer.innerHTML = `
+        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-xl">
+          <span class="text-sm text-gray-700">Total Videos Uploaded</span>
+          <span class="font-bold text-blue-600">${contentStats.videosUploaded.toLocaleString()}</span>
+        </div>
+        <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl">
+          <span class="text-sm text-gray-700">Total Notes Available</span>
+          <span class="font-bold text-green-600">${contentStats.notesUploaded.toLocaleString()}</span>
+        </div>
+        <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl">
+          <span class="text-sm text-gray-700">Total Quizzes Attempted</span>
+          <span class="font-bold text-purple-600">${contentStats.quizzesAttempted.toLocaleString()}</span>
+        </div>
+        <div class="flex justify-between items-center p-3 bg-orange-50 rounded-xl">
+          <span class="text-sm text-gray-700">Doubts Solved By Teachers</span>
+          <span class="font-bold text-orange-500">${contentStats.doubtsSolved.toLocaleString()}</span>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error(err);
+    chartContainer.innerHTML = '<div class="text-center py-4 text-red-400">Failed to load data.</div>';
+    statsContainer.innerHTML = '<div class="text-center py-4 text-red-400">Failed to load data.</div>';
+  }
 }
 
 function showToast(msg, type = 'info') {

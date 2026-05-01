@@ -94,6 +94,7 @@ const PaymentAPI = {
 // ─────────────── ADMIN ───────────────
 const AdminAPI = {
   getOverview:    () => api.get('/admin/overview'),
+  getActivity:    () => api.get('/admin/activity'),
   getUsers:       () => api.get('/admin/users'),
   deleteUser:     (id) => api.delete(`/admin/users/${id}`),
   getTeachers:    () => api.get('/admin/teachers/pending'),

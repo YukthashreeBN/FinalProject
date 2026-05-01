@@ -154,22 +154,15 @@
         <h2 style="font-family:'Sora',sans-serif" class="text-2xl font-bold text-gray-900 mb-6">Platform Activity</h2>
         <div class="grid md:grid-cols-2 gap-5 mb-6">
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 class="font-semibold text-gray-900 mb-4">Daily Active Users</h3>
-            <div class="space-y-2">
-              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Mon</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:72%"></div></div><span class="text-xs text-gray-600">720</span></div>
-              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Tue</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:85%"></div></div><span class="text-xs text-gray-600">850</span></div>
-              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Wed</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:60%"></div></div><span class="text-xs text-gray-600">600</span></div>
-              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Thu</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:90%"></div></div><span class="text-xs text-gray-600">900</span></div>
-              <div class="flex items-center gap-3"><span class="text-xs text-gray-500 w-10">Fri</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="bg-blue-500 h-3 rounded-full" style="width:78%"></div></div><span class="text-xs text-gray-600">780</span></div>
+            <h3 class="font-semibold text-gray-900 mb-4">New User Registrations</h3>
+            <div class="space-y-2" id="activityChart">
+              <div class="text-center py-4 text-gray-400">Loading chart...</div>
             </div>
           </div>
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 class="font-semibold text-gray-900 mb-4">Content Stats</h3>
-            <div class="space-y-3">
-              <div class="flex justify-between items-center p-3 bg-blue-50 rounded-xl"><span class="text-sm text-gray-700">Videos Watched Today</span><span class="font-bold text-blue-600">1,240</span></div>
-              <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl"><span class="text-sm text-gray-700">Notes Downloaded</span><span class="font-bold text-green-600">340</span></div>
-              <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl"><span class="text-sm text-gray-700">Quizzes Attempted</span><span class="font-bold text-purple-600">520</span></div>
-              <div class="flex justify-between items-center p-3 bg-orange-50 rounded-xl"><span class="text-sm text-gray-700">AI Doubts Solved</span><span class="font-bold text-orange-500">890</span></div>
+            <div class="space-y-3" id="contentStats">
+              <div class="text-center py-4 text-gray-400">Loading stats...</div>
             </div>
           </div>
         </div>
@@ -183,7 +176,7 @@
             <div class="flex items-center gap-3">
               <input type="text" placeholder="Search payments..." class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
             </div>
-            <span class="text-sm text-gray-500">Total: <span class="text-green-600 font-bold">₹4,20,350</span></span>
+            <span class="text-sm text-gray-500">Total: <span id="totalPaymentsAmount" class="text-green-600 font-bold">₹0</span></span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">

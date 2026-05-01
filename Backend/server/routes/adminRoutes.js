@@ -3,6 +3,10 @@ const router = express.Router();
 const User = require("../models/User");
 const Course = require("../models/Course");
 const Order = require("../models/Order");
+const Video = require("../models/Video");
+const Note = require("../models/Note");
+const QuizResult = require("../models/QuizResult");
+const Doubt = require("../models/Doubt");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
@@ -93,16 +97,22 @@ router.get("/payments", async (req, res) => {
     try {
         const payments = await Order.find().populate("userId", "name email").sort({ createdAt: -1 });
         
-        const formattedPayments = payments.map(p => ({
-            orderId: p.orderId,
-            student: p.userId ? p.userId.name : 'Unknown User',
-            course: p.courseName,
-            amount: `${p.currency} ${p.amount}`,
-            status: p.status,
-            date: p.createdAt
-        }));
+        let totalAmount = 0;
+        const formattedPayments = payments.map(p => {
+            if (p.status === 'success') {
+                totalAmount += p.amount;
+            }
+            return {
+                orderId: p.orderId,
+                student: p.userId ? p.userId.name : 'Unknown User',
+                course: p.courseName,
+                amount: `${p.currency} ${p.amount}`,
+                status: p.status,
+                date: p.createdAt
+            };
+        });
 
-        res.json({ payments: formattedPayments });
+        res.json({ payments: formattedPayments, totalAmount });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }
@@ -137,6 +147,54 @@ router.get("/overview", async (req, res) => {
                 totalRevenue
             },
             recentPayments
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+// GET /api/admin/activity → get platform activity stats
+router.get("/activity", async (req, res) => {
+    try {
+        const videosUploaded = await Video.countDocuments();
+        const notesUploaded = await Note.countDocuments();
+        const quizzesAttempted = await QuizResult.countDocuments();
+        const doubtsSolved = await Doubt.countDocuments({ teacherReply: { $exists: true, $ne: "" } });
+
+        // Calculate new user registrations for the last 5 days
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        
+        const registrations = [];
+        for (let i = 4; i >= 0; i--) {
+            const startOfDay = new Date(today);
+            startOfDay.setDate(today.getDate() - i);
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const endOfDay = new Date(today);
+            endOfDay.setDate(today.getDate() - i);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const count = await User.countDocuments({
+                createdAt: {
+                    $gte: startOfDay,
+                    $lte: endOfDay
+                }
+            });
+
+            // Format day name, e.g., 'Mon'
+            const dayName = startOfDay.toLocaleDateString('en-US', { weekday: 'short' });
+            registrations.push({ day: dayName, count });
+        }
+
+        res.json({
+            contentStats: {
+                videosUploaded,
+                notesUploaded,
+                quizzesAttempted,
+                doubtsSolved
+            },
+            newUsers: registrations
         });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
